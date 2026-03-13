@@ -1,0 +1,13 @@
+{
+  "name": "tcg-tracker",
+  "version": "1.0.0",
+  "description": "TCG business tracker — PWA",
+  "scripts": {
+    "test": "node scripts/test.js",
+    "test:watch": "node --watch scripts/test.js",
+    "build": "node scripts/build.js",
+    "ci": "node scripts/ci.js",
+    "deploy": "npm run ci && wrangler pages deploy public"
+  },
+  "devDependencies": {}
+}
