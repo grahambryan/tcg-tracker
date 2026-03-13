@@ -1491,21 +1491,21 @@ select.field-input{cursor:pointer}
 
   <!-- ── Holdings ── -->
   <div id="cardsPanel-holdings">
-    <div id="invStats" class="stat-grid" style="margin-bottom:12px"></div>
+    <div id="cards-invStats" class="stat-grid" style="margin-bottom:12px"></div>
     <div class="search-bar">
-      <input class="search-input" id="invSearch" placeholder="Search holdings…" oninput="renderInv()">
-      <button class="filter-btn active" id="filterBiz" onclick="setInvFilter('biz',this)">Business</button>
-      <button class="filter-btn" id="filterAll" onclick="setInvFilter('all',this)">All</button>
+      <input class="search-input" id="cards-invSearch" placeholder="Search holdings…" oninput="renderInv()">
+      <button class="filter-btn active" id="cards-filterBiz" onclick="setInvFilter('biz',this)">Business</button>
+      <button class="filter-btn" id="cards-filterAll" onclick="setInvFilter('all',this)">All</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
       <span style="font-size:9px;color:var(--ink3);font-family:var(--mono)">SORT</span>
-      <button class="filter-btn active" id="sortMkt"  onclick="setInvSort('mkt',this)">Value ↓</button>
-      <button class="filter-btn"        id="sortGain" onclick="setInvSort('gain',this)">Gain%</button>
-      <button class="filter-btn"        id="sortCost" onclick="setInvSort('cost',this)">Cost</button>
-      <button class="filter-btn"        id="sortName" onclick="setInvSort('name',this)">Name</button>
-      <button class="filter-btn"        id="sortDate" onclick="setInvSort('date',this)">Date</button>
+      <button class="filter-btn active" id="cards-sortMkt"  onclick="setInvSort('mkt',this)">Value ↓</button>
+      <button class="filter-btn"        id="cards-sortGain" onclick="setInvSort('gain',this)">Gain%</button>
+      <button class="filter-btn"        id="cards-sortCost" onclick="setInvSort('cost',this)">Cost</button>
+      <button class="filter-btn"        id="cards-sortName" onclick="setInvSort('name',this)">Name</button>
+      <button class="filter-btn"        id="cards-sortDate" onclick="setInvSort('date',this)">Date</button>
     </div>
-    <div id="invTable"></div>
+    <div id="cards-invTable"></div>
   </div>
 
   <!-- ── Signals ── -->
@@ -1623,7 +1623,7 @@ select.field-input{cursor:pointer}
   </div>
 
   <!-- Portfolio snapshot strip -->
-  <div class="stat-grid" id="mktPortfolioStats" style="margin-bottom:10px"></div>
+  <div class="stat-grid" id="mkt-portfolioStats" style="margin-bottom:10px"></div>
 
   <!-- Signal summary bar -->
   <div id="mktSignalBar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
@@ -1805,29 +1805,29 @@ select.field-input{cursor:pointer}
   <div id="actPanel-sells">
     <div id="sellsStats" class="stat-grid" style="margin-bottom:12px"></div>
     <div class="search-bar">
-      <input class="search-input" id="sellsSearch" placeholder="Search sales…" oninput="renderSells()">
-      <button class="filter-btn active" id="sellsFilterAll"    onclick="setSellsFilter('all',this)">All</button>
-      <button class="filter-btn"        id="sellsFilterWn"     onclick="setSellsFilter('wn',this)">Whatnot</button>
-      <button class="filter-btn"        id="sellsFilterOther"  onclick="setSellsFilter('other',this)">Other</button>
-      <button class="filter-btn"        id="sellsFilterNoCost" onclick="setSellsFilter('nocost',this)" style="color:var(--ylw)">⚠ No Cost</button>
-      <button class="filter-btn"        id="sellsFilterMatch"  onclick="setSellsFilter('match',this)"  style="color:var(--acc)">⟷ Fill</button>
-      <button class="filter-btn"        id="sellsFilterDupes"  onclick="setSellsFilter('dupes',this)"  style="color:var(--red)">⊗ Dupes</button>
-      <button class="filter-btn"        id="sellsFilterEdited" onclick="setSellsFilter('edited',this)" style="color:var(--blu)">✎ Edited</button>
-      <button class="filter-btn"        id="sellsFilterVoided" onclick="setSellsFilter('voided',this)" style="color:var(--ink3)">⊘ Voided</button>
+      <input class="search-input" id="act-sellsSearch" placeholder="Search sales…" oninput="renderSells()">
+      <button class="filter-btn active" id="act-sellsFilterAll"    onclick="setSellsFilter('all',this)">All</button>
+      <button class="filter-btn"        id="act-sellsFilterWn"     onclick="setSellsFilter('wn',this)">Whatnot</button>
+      <button class="filter-btn"        id="act-sellsFilterOther"  onclick="setSellsFilter('other',this)">Other</button>
+      <button class="filter-btn"        id="act-sellsFilterNoCost" onclick="setSellsFilter('nocost',this)" style="color:var(--ylw)">⚠ No Cost</button>
+      <button class="filter-btn"        id="act-sellsFilterMatch"  onclick="setSellsFilter('match',this)"  style="color:var(--acc)">⟷ Fill</button>
+      <button class="filter-btn"        id="act-sellsFilterDupes"  onclick="setSellsFilter('dupes',this)"  style="color:var(--red)">⊗ Dupes</button>
+      <button class="filter-btn"        id="act-sellsFilterEdited" onclick="setSellsFilter('edited',this)" style="color:var(--blu)">✎ Edited</button>
+      <button class="filter-btn"        id="act-sellsFilterVoided" onclick="setSellsFilter('voided',this)" style="color:var(--ink3)">⊘ Voided</button>
     </div>
-    <div id="sellsTable"></div>
+    <div id="act-sellsTable"></div>
   </div>
 
   <!-- Buys panel -->
   <div id="actPanel-buys" style="display:none">
     <div class="search-bar">
-      <input class="search-input" id="buysSearch" placeholder="Search buys…" oninput="renderBuys()">
-      <button class="filter-btn active" id="buysFilterAll"     onclick="setBuysFilter('all',this)">All</button>
-      <button class="filter-btn"        id="buysFilterLot"     onclick="setBuysFilter('lot',this)">Lots</button>
-      <button class="filter-btn"        id="buysFilterUnnamed" onclick="setBuysFilter('unnamed',this)">Unnamed</button>
-      <button class="filter-btn"        id="buysFilterDupes"   onclick="setBuysFilter('dupes',this)" style="color:var(--red)">⊗ Dupes</button>
+      <input class="search-input" id="act-buysSearch" placeholder="Search buys…" oninput="renderBuys()">
+      <button class="filter-btn active" id="act-buysFilterAll"     onclick="setBuysFilter('all',this)">All</button>
+      <button class="filter-btn"        id="act-buysFilterLot"     onclick="setBuysFilter('lot',this)">Lots</button>
+      <button class="filter-btn"        id="act-buysFilterUnnamed" onclick="setBuysFilter('unnamed',this)">Unnamed</button>
+      <button class="filter-btn"        id="act-buysFilterDupes"   onclick="setBuysFilter('dupes',this)" style="color:var(--red)">⊗ Dupes</button>
     </div>
-    <div id="buysTable"></div>
+    <div id="act-buysTable"></div>
   </div>
 </div>
 
@@ -2522,6 +2522,12 @@ function rowHash(r) { return hashStr(Object.values(r).join('|')); }
 // ════════════════════════════════════════════
 function $$(s) { return document.querySelectorAll(s); }
 function $(s) { return document.querySelector(s); }
+// Write to both primary and any secondary (scoped) mirror containers
+function _setHTML(ids, html) { ids.forEach(id => { const e=$(id); if(e) e.innerHTML=html; }); }
+function setInvStats(h)  { _setHTML(['#invStats','#cards-invStats'], h); }
+function setInvTable(h)  { _setHTML(['#invTable','#cards-invTable'], h); }
+function setBuysTable(h) { _setHTML(['#buysTable','#act-buysTable'], h); }
+function setSellsTable(h){ _setHTML(['#sellsTable','#act-sellsTable'], h); }
 // mkCalc stub — overwritten by tooltip IIFE; guards against load-order issues
 var mkCalc = window.mkCalc = function(obj) {
   try { return "data-calc='" + JSON.stringify(obj).replace(/'/g,"&#39;") + "'"; }
@@ -3402,18 +3408,18 @@ function renderInv() {
   const dci_cost = mkCalc({label:'Cost Basis', formula:'Sum of (costBasis x qty) per record', rows:[{k:'Records with cost data',v:items.filter(i=>cn(i.costBasis)>0).length},{k:'Records at $0 cost',v:items.filter(i=>cn(i.costBasis)<=0).length},{k:'= Cost basis',v:fmtMoney(totalCost)}], note:'What you paid for cards still in inventory.'});
   const dci_unr  = mkCalc({label:'Unrealized Gain / Loss', formula:'Market Value - Cost Basis', rows:[{k:'Market value',v:fmtMoney(totalVal),c:'b'},{k:'Cost basis',v:fmtMoney(totalCost)},{k:'= Unrealized G/L',v:fmtMoney(totalUnreal),c:totalUnreal>=0?'g':'r'}], note:'Not taxable until sold.'});
 
-  $('#invStats').innerHTML = `
+  setInvStats(`
     <div class="stat" ${dci_qty}><div class="stat-l">Cards</div><div class="stat-v p">${totalQty}</div></div>
     <div class="stat" ${dci_mkt}><div class="stat-l">Market Value</div><div class="stat-v b">${fmtMoneyShort(totalVal)}</div></div>
     <div class="stat" ${dci_cost}><div class="stat-l">Cost Basis</div><div class="stat-v">${fmtMoneyShort(totalCost)}</div></div>
     <div class="stat" ${dci_unr}><div class="stat-l">Unrealized</div><div class="stat-v ${totalUnreal>=0?'g':'r'}">${fmtMoneyShort(totalUnreal)}</div></div>
-    ${DB._invLastRefreshed?`<div class="stat" style="grid-column:1/-1;border-color:rgba(0,229,160,.15)"><div class="stat-l">Last Collector Import</div><div class="stat-v" style="font-size:12px;color:var(--grn);font-family:var(--mono)">${DB._invLastRefreshed}</div></div>`:''}`;
+    ${DB._invLastRefreshed?`<div class="stat" style="grid-column:1/-1;border-color:rgba(0,229,160,.15)"><div class="stat-l">Last Collector Import</div><div class="stat-v" style="font-size:12px;color:var(--grn);font-family:var(--mono)">${DB._invLastRefreshed}</div></div>`:''}`);
 
   if(!items.length){
-    $('#invTable').innerHTML='<div class="empty-state"><div class="empty-state-icon">🃏</div><div class="empty-state-title">No cards yet</div><div class="empty-state-sub">Import a CSV from Collector, or add your first card manually.</div><div class="empty-state-action" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="btn btn-acc btn-sm" onclick="navTo(\'import\')">📥 Import CSV</button><button class="btn btn-ghost btn-sm" onclick="openAddInvDrawer()">+ Add Card</button></div></div>';return;
+    setInvTable('<div class="empty-state"><div class="empty-state-icon">🃏</div><div class="empty-state-title">No cards yet</div><div class="empty-state-sub">Import a CSV from Collector, or add your first card manually.</div><div class="empty-state-action" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="btn btn-acc btn-sm" onclick="navTo(\'import\')">📥 Import CSV</button><button class="btn btn-ghost btn-sm" onclick="openAddInvDrawer()">+ Add Card</button></div></div>');return;
   }
 
-  const searchQ = ($('#invSearch')||{}).value?.toLowerCase() || '';
+  const searchQ = (currentPage==='cards' ? ($('#cards-invSearch')||{}) : ($('#invSearch')||{})).value?.toLowerCase() || '';
   let filtered = items.filter(i => {
     if (invFilter === 'biz' && i.isPersonal) return false;
     if (invFilter === 'grading' && !['queue','sent','returned'].includes(i.gradingStatus)) return false;
@@ -3446,7 +3452,7 @@ function renderInv() {
     }
   });
 
-  $('#invTable').innerHTML=`<div class="tbl-wrap"><table>
+  setInvTable(`<div class="tbl-wrap"><table>
     <thead><tr>
       <th style="width:44px"></th><th>Card</th><th>Set · #</th><th>Game</th><th>Qty</th><th>Grading</th><th>Cost</th><th>Mkt Val</th><th>Gain</th>
     </tr></thead>
@@ -3474,7 +3480,7 @@ function renderInv() {
         <td class="mono ${gain>=0?'g':'r'}">${fmtMoney(gain)}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table></div>`;
+  </table></div>`);
 }
 
 function gradeBadge(item) {
@@ -3493,7 +3499,7 @@ function gradeBadge(item) {
 // ── Inventory Sort ──
 function setInvSort(s, el) {
   invSort = s;
-  $$('.filter-btn[id^="sort"]').forEach(b => b.classList.remove('active'));
+  $$('[onclick^="setInvSort"]').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
   renderInv();
 }
@@ -3667,7 +3673,7 @@ function crossMatchBuys() {
 
 function renderBuysDupesMode(groups, statBar) {
   if (!groups.length) {
-    $('#buysTable').innerHTML = statBar + `<div class="tbl-empty">✓ No duplicate buys detected.</div>`;
+    setBuysTable(statBar + `<div class="tbl-empty">✓ No duplicate buys detected.</div>`);
     return;
   }
 
@@ -3729,7 +3735,7 @@ function renderBuysDupesMode(groups, statBar) {
   });
 
   window._buyDupeGroups = groups;
-  $('#buysTable').innerHTML = html;
+  setBuysTable(html);
 }
 
 function deleteBuyDupeGroup(gi) {
@@ -3825,7 +3831,7 @@ function buildActivityChart(type) {
     + '</div>';
 }
 function renderBuys() {
-  const searchQ = ($('#buysSearch')||{}).value?.toLowerCase() || '';
+  const searchQ = (currentPage==='activity' ? ($('#act-buysSearch')||{}) : ($('#buysSearch')||{})).value?.toLowerCase() || '';
   const allBuys = [...DB.buys].sort((a,b) => b.date.localeCompare(a.date));
 
   const dupeGroups   = findDuplicateBuys();
@@ -3860,11 +3866,11 @@ function renderBuys() {
   );
 
   if (!items.length) {
-    $('#buysTable').innerHTML = statBar + `<div class="tbl-empty">${searchQ||buysFilter!=='all'?'No matching buys.':'No buys recorded yet. Import a Whatnot or bank CSV from the Import tab.'}</div>`;
+    setBuysTable(statBar + `<div class="tbl-empty">${searchQ||buysFilter!=='all'?'No matching buys.':'No buys recorded yet. Import a Whatnot or bank CSV from the Import tab.'}</div>`);
     return;
   }
 
-  $('#buysTable').innerHTML = statBar + `<div class="tbl-wrap"><table>
+  setBuysTable(statBar + `<div class="tbl-wrap"><table>
     <thead><tr><th>Date</th><th>Card Name</th><th>Game</th><th>Source</th><th>Seller</th><th>Total</th><th>Type</th><th></th></tr></thead>
     <tbody>${items.map(b => `<tr style="${b.isPersonal?'opacity:.55':''}">
       <td class="mono" style="font-size:9px;white-space:nowrap">${fmtDate(b.date)}</td>
@@ -3882,7 +3888,7 @@ function renderBuys() {
           `<span class="bdg bdg-grn">Business</span>`}</td>
       <td><button class="btn btn-ghost btn-sm" style="font-size:9px;padding:3px 7px" onclick="deleteItem('buys','${b.id}')">✕</button></td>
     </tr>`).join('')}</tbody>
-  </table></div>`;
+  </table></div>`);
 }
 
 function updateBuyName(id, val) {
@@ -3894,7 +3900,7 @@ function updateBuyName(id, val) {
 // SELLS
 // ════════════════════════════════════════════
 function renderSells() {
-  const searchQ  = ($('#sellsSearch')||{}).value?.toLowerCase() || '';
+  const searchQ = (currentPage==='activity' ? ($('#act-sellsSearch')||{}) : ($('#sellsSearch')||{})).value?.toLowerCase() || '';
   const allItems = [...DB.sells].sort((a,b) => b.date.localeCompare(a.date));
   const bizItems = allItems.filter(s => !s.isPersonal && !s._dupeVoided);
   const totalRev = bizItems.reduce((a,s) => a+cn(s.salePrice), 0);
@@ -3978,9 +3984,9 @@ function renderSells() {
 
   if (!items.length) {
     if (searchQ || sellsFilter !== 'all') {
-      $('#sellsTable').innerHTML = '<div class="tbl-empty">No matching sales.</div>';
+      setSellsTable('<div class="tbl-empty">No matching sales.</div>');
     } else {
-      $('#sellsTable').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">No sales recorded</div><div class="empty-state-sub">Import a Collector sales export or Whatnot earnings CSV to see your sales history.</div><div class="empty-state-action"><button class="btn btn-ghost btn-sm" onclick="navTo(\'import\')">📥 Import CSV</button></div></div>';
+      setSellsTable('<div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">No sales recorded</div><div class="empty-state-sub">Import a Collector sales export or Whatnot earnings CSV to see your sales history.</div><div class="empty-state-action"><button class="btn btn-ghost btn-sm" onclick="navTo(\'import\')">📥 Import CSV</button></div></div>');
     }
     return;
   }
@@ -4157,7 +4163,7 @@ function renderSells() {
     html += renderGroup(items.filter(s => isOther(s)), 'Other', '🔵');
   }
 
-  $('#sellsTable').innerHTML = html || `<div class="tbl-empty">No matching sales.</div>`;
+  setSellsTable(html || `<div class="tbl-empty">No matching sales.</div>`);
 }
 
 // ── Match Mode: side-by-side Collector vs WN Earnings pairing ──────────────
@@ -4243,7 +4249,7 @@ function renderDupesMode() {
   const groups = findDuplicateSells();
 
   if (!groups.length) {
-    $('#sellsTable').innerHTML = `<div class="tbl-empty">✓ No suspected duplicates found.</div>`;
+    setSellsTable(`<div class="tbl-empty">✓ No suspected duplicates found.</div>`);
     return;
   }
 
@@ -4312,7 +4318,7 @@ function renderDupesMode() {
 
   // Store groups for bulk actions
   window._dupeGroups = groups;
-  $('#sellsTable').innerHTML = html;
+  setSellsTable(html);
 }
 
 function voidDupeRow(voidId, gi) {
@@ -4500,7 +4506,7 @@ function renderMatchMode(bizItems, isWnEarnings) {
   const noName    = needsWork.filter(s => !s.cardName || /^Card On Screen/i.test(s.cardName) || s.cardName === 'Whatnot Sale').length;
 
   if (!needsWork.length) {
-    $('#sellsTable').innerHTML = `<div class="tbl-empty">✓ All Whatnot sales have names and cost basis filled in.</div>`;
+    setSellsTable(`<div class="tbl-empty">✓ All Whatnot sales have names and cost basis filled in.</div>`);
     return;
   }
 
@@ -4605,7 +4611,7 @@ function renderMatchMode(bizItems, isWnEarnings) {
       }).join('')}</tbody>
     </table></div>`;
 
-  $('#sellsTable').innerHTML = html;
+  setSellsTable(html);
 }
 
 
@@ -6409,19 +6415,19 @@ let sellsFilter = 'all';
 
 function setInvFilter(f, el) {
   invFilter = f;
-  $$('.filter-btn[id^=filter]').forEach(b => b.classList.remove('active'));
+  $$('[onclick^="setInvFilter"]').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   renderInv();
 }
 function setBuysFilter(f, el) {
   buysFilter = f;
-  $$('.filter-btn[id^=buysFilter]').forEach(b => b.classList.remove('active'));
+  $$('[onclick^="setBuysFilter"]').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   renderBuys();
 }
 function setSellsFilter(f, el) {
   sellsFilter = f;
-  $$('.filter-btn[id^="sellsFilter"]').forEach(b => b.classList.remove('active'));
+  $$('[onclick^="setSellsFilter"]').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   renderSells();
 }

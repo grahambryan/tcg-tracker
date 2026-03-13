@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TCG Tracker — Dev Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111;
+      font-family: system-ui, sans-serif;
+      color: #aaa;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 20px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+      font-size: 13px;
+    }
+    header strong { color: #fff; font-size: 14px; }
+    .badge {
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+    }
+    .views {
+      display: flex;
+      flex: 1;
+      gap: 16px;
+      padding: 16px;
+      overflow: hidden;
+    }
+    .view {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .view-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      text-align: center;
+    }
+    .desktop-view {
+      flex: 1;
+    }
+    .desktop-view iframe {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #000;
+    }
+    .mobile-view {
+      flex-shrink: 0;
+    }
+    /* iPhone 17 Pro Max bezel */
+    .phone-shell {
+      background: #1c1c1e;
+      border-radius: 52px;
+      padding: 14px 10px;
+      box-shadow:
+        0 0 0 1px #3a3a3c,
+        0 0 0 3px #2c2c2e,
+        0 20px 60px rgba(0,0,0,0.7);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone-notch {
+      background: #000;
+      width: 120px;
+      height: 32px;
+      border-radius: 20px;
+      margin: 0 auto 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .phone-notch .camera { width: 12px; height: 12px; border-radius: 50%; background: #1c1c1e; border: 1px solid #333; }
+    .phone-notch .speaker { width: 40px; height: 6px; border-radius: 3px; background: #1c1c1e; border: 1px solid #333; }
+    .phone-screen {
+      flex: 1;
+      border-radius: 40px;
+      overflow: hidden;
+      background: #000;
+    }
+    .phone-screen iframe {
+      width: 390px;
+      height: 844px;
+      border: none;
+      transform-origin: top left;
+    }
+    .phone-home-bar {
+      width: 120px;
+      height: 5px;
+      background: #444;
+      border-radius: 3px;
+      margin: 10px auto 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>TCG Tracker</strong>
+    <span class="badge">Desktop</span>
+    <span class="badge">iPhone 17 Pro Max</span>
+    <span style="margin-left:auto; color:#555; font-size:11px">Hot reload active · browser-sync</span>
+  </header>
+
+  <div class="views">
+    <!-- Desktop -->
+    <div class="view desktop-view">
+      <div class="view-label">Desktop</div>
+      <iframe src="/index.html" id="desktop-frame"></iframe>
+    </div>
+
+    <!-- Mobile -->
+    <div class="view mobile-view" id="mobile-wrapper">
+      <div class="view-label">iPhone 17 Pro Max</div>
+      <div class="phone-shell">
+        <div class="phone-notch">
+          <div class="speaker"></div>
+          <div class="camera"></div>
+        </div>
+        <div class="phone-screen" id="phone-screen">
+          <iframe src="/index.html" id="mobile-frame"></iframe>
+        </div>
+        <div class="phone-home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Scale the phone screen iframe to fit available height
+    function scalePhone() {
+      const wrapper = document.getElementById('mobile-wrapper');
+      const shell = wrapper.querySelector('.phone-shell');
+      const screen = document.getElementById('phone-screen');
+      const frame = document.getElementById('mobile-frame');
+
+      const availH = wrapper.clientHeight - 60; // label + padding
+      const shellPadV = 14 * 2 + 32 + 8 + 5 + 10; // top+bottom pad + notch + gaps
+      const screenH = availH - shellPadV;
+      const scale = screenH / 844;
+
+      frame.style.transform = `scale(${scale})`;
+      screen.style.width = Math.round(390 * scale) + 'px';
+      screen.style.height = Math.round(844 * scale) + 'px';
+      screen.style.borderRadius = Math.round(40 * scale) + 'px';
+
+      // Set shell width to match scaled phone
+      const shellW = Math.round(390 * scale) + 20 + 2; // padding + border
+      shell.style.width = shellW + 'px';
+      wrapper.style.width = shellW + 'px';
+    }
+
+    scalePhone();
+    window.addEventListener('resize', scalePhone);
+  </script>
+</body>
+</html>
