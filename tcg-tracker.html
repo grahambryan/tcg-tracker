@@ -2135,23 +2135,23 @@
       z-index: 9999;
       pointer-events: none;
       align-items: center;
-      width: max-content;
-      max-width: 92vw;
+      width: calc(100vw - 32px);
+      max-width: 400px;
     }
 
     .toast-item {
-      padding: 10px 16px;
+      padding: 10px 14px;
       border-radius: var(--r-md);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       font-family: var(--mono);
       background: var(--s0);
       border: 1px solid var(--bd2);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
-      white-space: nowrap;
-      max-width: 92vw;
+      max-width: 100%;
+      line-height: 1.4;
       animation: toastIn .22s ease;
       box-shadow: 0 4px 20px rgba(0, 0, 0, .6);
       pointer-events: auto;
@@ -3886,10 +3886,10 @@ select.field-input{cursor:pointer}
 /* ── Toast stack ── */
 #toastStack{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 12px);left:50%;
   transform:translateX(-50%);display:flex;flex-direction:column-reverse;gap:6px;
-  z-index:9999;pointer-events:none;align-items:center;width:max-content;max-width:90vw}
-.toast-item{padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;
+  z-index:9999;pointer-events:none;align-items:center;width:calc(100vw - 32px);max-width:400px}
+.toast-item{padding:10px 14px;border-radius:10px;font-size:11px;font-weight:600;
   font-family:var(--mono);background:var(--s0);border:1px solid var(--bd2);
-  display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:90vw;
+  display:flex;align-items:flex-start;gap:8px;max-width:100%;line-height:1.4;
   animation:toastIn .22s ease;box-shadow:0 4px 20px rgba(0,0,0,.5)}
 .toast-item.out{animation:toastOut .22s ease forwards}
 .toast-grn{color:var(--grn);border-color:rgba(0,229,160,.35)}
@@ -4932,6 +4932,7 @@ select.field-input{cursor:pointer}
               <span id="aiToggleDot2"></span><span id="aiToggleLabel">Off</span>
             </button>
           </div>
+          <div id="aiHistoryPanel" style="display:none;border-top:1px solid var(--bd);padding:12px 14px"></div>
         </div>
 
         <!-- ══ DANGER ══ -->
@@ -5958,6 +5959,55 @@ select.field-input{cursor:pointer}
         + '<span style="color:var(--red)">▼ ' + fmtMoneyShort(allCogs + allFees) + ' cost</span>'
         + '<span style="color:var(--blu)">📦 ' + fmtMoneyShort(portMkt) + ' portfolio</span>'
         + '</div>';
+      // Render AI refresh history
+      const histPanel = document.getElementById('aiHistoryPanel');
+      if (histPanel) {
+        const lr = DB.lastRefresh;
+        if (lr && lr.date) {
+          const d = new Date(lr.date);
+          const ago = Math.round((Date.now() - d.getTime()) / 60000);
+          const agoStr = ago < 60 ? ago + 'm ago' : ago < 1440 ? Math.round(ago / 60) + 'h ago' : Math.round(ago / 1440) + 'd ago';
+          const trendIcon = t => t === 'up' ? '↑' : t === 'down' ? '↓' : '→';
+          const trendColor = t => t === 'up' ? 'var(--grn)' : t === 'down' ? 'var(--red)' : 'var(--ink3)';
+          const confDot = c => c === 'high' ? '🟢' : c === 'medium' ? '🟡' : '🔴';
+
+          let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+            + '<div style="font-size:10px;font-family:var(--mono);color:var(--ink3);letter-spacing:.5px;text-transform:uppercase">Last Refresh</div>'
+            + '<div style="font-size:10px;font-family:var(--mono);color:var(--ink3)">' + agoStr + ' · ' + fmtDate(lr.date) + '</div>'
+            + '</div>';
+
+          html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:10px;font-family:var(--mono)">'
+            + '<span style="color:var(--grn)">' + lr.totalUpdated + ' updated</span>'
+            + (lr.totalSkipped ? '<span style="color:var(--ink3)">' + lr.totalSkipped + ' skipped</span>' : '')
+            + (lr.totalFailed ? '<span style="color:var(--red)">' + lr.totalFailed + ' failed</span>' : '')
+            + '<span style="color:var(--ink3)">' + lr.batches + ' batch' + (lr.batches !== 1 ? 'es' : '') + '</span>'
+            + '</div>';
+
+          if (lr.cards && lr.cards.length) {
+            html += '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px">';
+            lr.cards.forEach(c => {
+              html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--bd);font-size:10px">'
+                + '<span style="color:' + trendColor(c.trend) + ';font-size:12px;flex-shrink:0">' + trendIcon(c.trend) + '</span>'
+                + '<div style="flex:1;min-width:0">'
+                + '  <div style="font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.name || '') + '</div>'
+                + '  <div style="font-size:9px;color:var(--ink3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (c.reason || '') + '</div>'
+                + '</div>'
+                + '<div style="flex-shrink:0;text-align:right;font-family:var(--mono)">'
+                + '  <div style="font-weight:700">' + (c.midPrice ? fmtMoney(c.midPrice) : '—') + '</div>'
+                + '  <div style="font-size:8px">' + confDot(c.confidence) + '</div>'
+                + '</div>'
+                + '</div>';
+            });
+            html += '</div>';
+          }
+
+          histPanel.style.display = 'block';
+          histPanel.innerHTML = html;
+        } else {
+          histPanel.style.display = 'none';
+        }
+      }
+
       // Sync collapsible theme label
       const curTheme = localStorage.getItem('tcg_theme') || 'nightowl';
       const t = THEMES[curTheme];
@@ -10174,6 +10224,29 @@ select.field-input{cursor:pointer}
       return { totalUpdated, totalFailed, totalSkipped: skipped, totalCards: allCards.length, batches: batches.length };
     }
 
+    function saveRefreshHistory(result) {
+      if (!result || result.noWork) return;
+      // Build per-card results from marketCache
+      const cards = [];
+      const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
+      inv.forEach(i => {
+        const c = DB.marketCache?.[i.id];
+        if (c?.fetchedAt && (Date.now() - c.fetchedAt) < 60000) { // updated in last minute
+          cards.push({ name: i.cardName, game: i.game, midPrice: c.midPrice, trend: c.trend, confidence: c.confidence, reason: c.reason });
+        }
+      });
+      DB.lastRefresh = {
+        date: new Date().toISOString(),
+        totalUpdated: result.totalUpdated || 0,
+        totalSkipped: result.totalSkipped || 0,
+        totalFailed: result.totalFailed || 0,
+        totalCards: result.totalCards || 0,
+        batches: result.batches || 0,
+        cards: cards
+      };
+      save();
+    }
+
     // Thin wrapper for dashboard intel tab
     async function refreshMarketIntel() {
       if (!requireAI('Market Intelligence (Refresh Prices)')) return;
@@ -10188,6 +10261,7 @@ select.field-input{cursor:pointer}
 
       if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
       if (result.totalUpdated > 0) {
+        saveRefreshHistory(result);
         showToast('Updated ' + result.totalUpdated + ' cards' + (result.totalSkipped ? ', ' + result.totalSkipped + ' skipped (recent)' : ''), 'grn');
         autoDisableAI();
       } else if (!result.noWork) {
@@ -11119,6 +11193,7 @@ select.field-input{cursor:pointer}
 
       if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
       if (result.totalUpdated > 0) {
+        saveRefreshHistory(result);
         showToast('Updated ' + result.totalUpdated + ' cards' + (result.totalSkipped ? ', ' + result.totalSkipped + ' skipped (recent)' : '') + (result.totalFailed ? ', ' + result.totalFailed + ' failed' : ''), 'grn');
         autoDisableAI();
       } else if (!result.noWork) {
