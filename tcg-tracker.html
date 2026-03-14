@@ -4896,7 +4896,7 @@ function smartImportOne(fileId) {
   try {
     const dispatchRender = {
       wn:          () => { renderWnImport(f.rows);  commitImport('wn'); },
-      wne:         () => { renderWnEarningsInPanel(f.rows, 'wne'); commitImport('wne'); },
+      wne:         () => { renderWnEarningsImport(f.rows); commitImport('wne'); },
       col:         () => { renderColImport(f.rows);  commitImport('col'); },
       'csells-col':() => { renderCSellsImport(f.rows); /* user commits manually in the panel below */ },
       bank:        () => { renderBankImport(f.rows); commitImport('bank'); },
@@ -5428,7 +5428,8 @@ function renderWnEarningsImport(rows) {
   </table></div>`;
 
   // Remove byShow (no longer needed)
-  $('#out-wne').innerHTML = html;
+  const wneOut = $('#out-wne') || $('#out-wn');
+  if (wneOut) wneOut.innerHTML = html;
 }
 
 // Render WN Earnings into any output panel (used by auto-detect in Sales tab)
