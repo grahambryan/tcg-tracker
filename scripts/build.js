@@ -82,7 +82,16 @@ fs.writeFileSync(DEMO, demoHtml);
 const demoSize = (fs.statSync(DEMO).size / 1024).toFixed(1);
 ok(`Generated → public/demo.html (${demoSize}kb) with mock data`);
 
-// 5. Validate required assets
+// 5. Stamp sw.js with build timestamp so each deploy busts the SW cache
+const SW_TPL = path.join(ROOT, 'sw.js');
+const SW_OUT = path.join(PUBLIC, 'sw.js');
+if (!fs.existsSync(SW_TPL)) fail('Missing: sw.js (service worker template)');
+const buildTs = Date.now();
+const swSrc = fs.readFileSync(SW_TPL, 'utf8');
+fs.writeFileSync(SW_OUT, swSrc.replace('__BUILD_TS__', String(buildTs)));
+ok(`Stamped sw.js cache version → tcg-v${buildTs}`);
+
+// 6. Validate required assets
 const required = [
   'manifest.json',
   'sw.js',
