@@ -52,6 +52,12 @@ The test sandbox mocks DOM APIs (`getElementById`, `querySelector`, `createEleme
 
 When adding features, test by calling the function directly in the sandbox environment — the DOM mocks are minimal, so test logic/data rather than DOM manipulation.
 
+## Development
+
+- always make sure to hot reload the dev-preview and say its back up
+- Always make sure docs represent how the app is used, if it doesnt update them
+- write new tests for any new features
+
 ## Key Conventions
 
 - No external runtime dependencies — everything is vanilla JS loaded from CDN (only xlsx.js for Excel parsing)
