@@ -4986,9 +4986,9 @@ function renderWnImport(rows) {
   const data=valid.map((r,i)=>{
     const h=rowHash(r);
     const isDup=seenHash(h);
-    const name=(r['product name']||'').trim();
+    const name=(r['product description']||r['product name']||'').trim();
     const hasName=name&&!GENERIC_RE.test(name)&&name.length>4;
-    const isLot=/box|case|booster box|pack\s+lot/i.test(name+' '+(r['product description']||''));
+    const isLot=/box|case|booster box|pack\s+lot/i.test(name);
     const id='wn-'+i;
     const defaultMark=isDup?'skip':isLot?'lot':'biz';
     const wnDate = (r['processed date']||'').slice(0,10);
