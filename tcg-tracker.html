@@ -5474,7 +5474,7 @@ select.field-input{cursor:pointer}
     // ════════════════════════════════════════════
     // DATA LAYER
     // ════════════════════════════════════════════
-    const DB_KEY = 'tcg_v2';
+    const DB_KEY = window.__TCG_DEMO__ ? 'tcg_v2_demo' : 'tcg_v2';
     // ── AI Features toggle (default OFF — uses API credits) ──
     let aiEnabled = false; // default off — user must explicitly opt in
     function initAIToggle() {
@@ -5983,6 +5983,15 @@ select.field-input{cursor:pointer}
             + '<span style="color:var(--ink3)">' + lr.batches + ' batch' + (lr.batches !== 1 ? 'es' : '') + '</span>'
             + '</div>';
 
+          // Show errors if any
+          if (lr.errors && lr.errors.length) {
+            html += '<div style="background:var(--red3);border:1px solid rgba(255,68,102,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px">';
+            lr.errors.forEach(e => {
+              html += '<div style="font-size:10px;color:var(--red);font-family:var(--mono);margin-bottom:2px">Batch ' + e.batch + ': ' + e.message + '</div>';
+            });
+            html += '</div>';
+          }
+
           if (lr.cards && lr.cards.length) {
             html += '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px">';
             lr.cards.forEach(c => {
@@ -5999,6 +6008,8 @@ select.field-input{cursor:pointer}
                 + '</div>';
             });
             html += '</div>';
+          } else if (!lr.errors || !lr.errors.length) {
+            html += '<div style="font-size:10px;color:var(--ink3);font-style:italic">No card results — all batches may have failed.</div>';
           }
 
           histPanel.style.display = 'block';
@@ -10181,6 +10192,7 @@ select.field-input{cursor:pointer}
       }
 
       let totalUpdated = 0, totalFailed = 0;
+      const errors = [];
 
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
@@ -10201,7 +10213,8 @@ select.field-input{cursor:pointer}
         } catch (err) {
           console.error('Batch ' + (i + 1) + ' error:', err);
           totalFailed += batch.length;
-          showToast('Batch ' + (i + 1) + ' failed: ' + err.message, 'red');
+          errors.push({ batch: i + 1, message: err.message });
+          showToast('Batch ' + (i + 1) + ': ' + err.message, 'red');
         }
 
         // Brief pause between batches to avoid rate limits
@@ -10221,7 +10234,7 @@ select.field-input{cursor:pointer}
       DB.marketCacheTime = Date.now();
       save();
 
-      return { totalUpdated, totalFailed, totalSkipped: skipped, totalCards: allCards.length, batches: batches.length };
+      return { totalUpdated, totalFailed, totalSkipped: skipped, totalCards: allCards.length, batches: batches.length, errors };
     }
 
     function saveRefreshHistory(result) {
@@ -10231,7 +10244,7 @@ select.field-input{cursor:pointer}
       const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
       inv.forEach(i => {
         const c = DB.marketCache?.[i.id];
-        if (c?.fetchedAt && (Date.now() - c.fetchedAt) < 60000) { // updated in last minute
+        if (c?.fetchedAt && (Date.now() - c.fetchedAt) < 120000) { // updated in last 2 min
           cards.push({ name: i.cardName, game: i.game, midPrice: c.midPrice, trend: c.trend, confidence: c.confidence, reason: c.reason });
         }
       });
@@ -10242,7 +10255,8 @@ select.field-input{cursor:pointer}
         totalFailed: result.totalFailed || 0,
         totalCards: result.totalCards || 0,
         batches: result.batches || 0,
-        cards: cards
+        cards: cards,
+        errors: result.errors || []
       };
       save();
     }
@@ -10255,17 +10269,17 @@ select.field-input{cursor:pointer}
       if (btn) { btn.disabled = true; btn.textContent = '⟳ Fetching…'; }
 
       const result = await batchRefreshPrices(body);
+      saveRefreshHistory(result);
       const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
       buildIntelRows(inv);
       if (currentPage === 'inv') renderInv();
 
       if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
       if (result.totalUpdated > 0) {
-        saveRefreshHistory(result);
         showToast('Updated ' + result.totalUpdated + ' cards' + (result.totalSkipped ? ', ' + result.totalSkipped + ' skipped (recent)' : ''), 'grn');
         autoDisableAI();
       } else if (!result.noWork) {
-        showToast('No prices updated — check your API key', 'red');
+        showToast('No prices updated — check API key in Settings', 'red');
       }
     }
 
@@ -11188,16 +11202,16 @@ select.field-input{cursor:pointer}
       });
 
       const result = await batchRefreshPrices(rows);
+      saveRefreshHistory(result);
       renderMarket();
       if (currentPage === 'inv') renderInv();
 
       if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
       if (result.totalUpdated > 0) {
-        saveRefreshHistory(result);
         showToast('Updated ' + result.totalUpdated + ' cards' + (result.totalSkipped ? ', ' + result.totalSkipped + ' skipped (recent)' : '') + (result.totalFailed ? ', ' + result.totalFailed + ' failed' : ''), 'grn');
         autoDisableAI();
       } else if (!result.noWork) {
-        showToast('No prices updated — check your API key', 'red');
+        showToast('No prices updated — check API key in Settings', 'red');
       }
     }
 
