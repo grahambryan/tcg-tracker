@@ -7,7 +7,7 @@
     "test:watch": "node --watch scripts/test.js",
     "build": "node scripts/build.js",
     "ci": "node scripts/ci.js",
-    "deploy": "npm run ci && wrangler pages deploy public"
+    "dev": "node scripts/dev.js"
   },
   "devDependencies": {}
 }
