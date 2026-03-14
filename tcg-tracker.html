@@ -5164,8 +5164,42 @@ select.field-input{cursor:pointer}
               recent sold listings and current listings from TCGPlayer, eBay, and other marketplaces. Confidence is
               shown per card (high/mid/low dot).</div>
           </div>
-          <div class="docs-warn"><strong>AI features</strong> require the API key to be configured server-side. Toggle
-            AI on via the ⚙ Settings menu to enable price refresh and market analysis.</div>
+          <div class="docs-warn"><strong>AI features</strong> require your own Anthropic API key. Toggle AI on via ⚙ Settings, paste your key, then tap Refresh Prices.</div>
+        </div>
+      </div>
+
+      <!-- AI & Pricing Costs -->
+      <div class="docs-section">
+        <div class="docs-section-hdr" onclick="toggleDocsSection(this)">
+          <span class="docs-section-icon">💰</span>
+          <span class="docs-section-title">AI Pricing &amp; Costs</span>
+          <span class="docs-section-chevron">▼</span>
+        </div>
+        <div class="docs-section-body">
+          <div class="docs-tip"><strong>Refresh Prices</strong> uses Claude with web search to look up live market data. Each call costs real money from your Anthropic API balance.</div>
+          <div class="docs-faq">
+            <div class="docs-faq-q">What does it search?</div>
+            <div class="docs-faq-a">For each card, the AI searches <strong>recent eBay sold listings</strong> and <strong>TCGPlayer market prices</strong>. It returns a fair market value, price range (low/high), trend direction, and a confidence rating. Results are cached locally and persist across sessions.</div>
+          </div>
+          <div class="docs-faq">
+            <div class="docs-faq-q">How much does it cost?</div>
+            <div class="docs-faq-a">Cards are sent in batches of 10. Each batch makes one API call with web search, costing roughly <strong>$0.01–0.05</strong> depending on search complexity. For example:<br><br>
+              <strong>50 cards</strong> = ~5 batches = ~$0.05–0.25<br>
+              <strong>200 cards</strong> = ~20 batches = ~$0.20–1.00<br><br>
+              Cards priced within the last 24 hours are automatically skipped, so re-running a refresh is usually free or very cheap.</div>
+          </div>
+          <div class="docs-faq">
+            <div class="docs-faq-q">Why does AI turn off after a refresh?</div>
+            <div class="docs-faq-a">To prevent accidental charges. After a successful refresh, AI features are automatically disabled. You'll need to re-enable AI in Settings before the next refresh. Your cached prices remain available regardless.</div>
+          </div>
+          <div class="docs-faq">
+            <div class="docs-faq-q">Where is my API key stored?</div>
+            <div class="docs-faq-a">In your browser's localStorage — the same place as all your other TCG Tracker data. It is <strong>never sent anywhere</strong> except directly to Anthropic's API in the request header. It is not included in backups/exports.</div>
+          </div>
+          <div class="docs-faq">
+            <div class="docs-faq-q">What if a batch fails?</div>
+            <div class="docs-faq-a">The app continues with the remaining batches. Failed cards will use Collector app estimates as a fallback. You'll see a toast for each failed batch with the error details. Partial results are saved after each batch so nothing is lost.</div>
+          </div>
         </div>
       </div>
 
@@ -9971,110 +10005,193 @@ select.field-input{cursor:pointer}
       $('#intelBody').innerHTML = summaryHtml + rowsHtml + moreHtml;
     }
 
-    // Fetch live prices via Claude API
-    async function refreshMarketIntel() {
-      if (!requireAI('Market Intelligence (Refresh Prices)')) return;
-      const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
-      if (!inv.length) { alert('No inventory cards to price.'); return; }
+    // ── Batched market price engine ─────────────────────────────────────────
+    const MKT_BATCH_SIZE = 10;
+    const MKT_CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours
 
-      const btn = $('#intelRefreshBtn');
-      btn.disabled = true;
-      btn.textContent = '⟳ Fetching…';
-      $('#intelBody').innerHTML = `<div class="intel-loading"><span class="spin">⟳</span> Looking up current market prices across eBay, TCGPlayer, and recent sales…</div>`;
+    function autoDisableAI() {
+      if (!aiEnabled) return;
+      aiEnabled = false;
+      localStorage.setItem('tcg_ai_enabled', 'false');
+      updateAIToggleUI();
+      updateSettingsMenu();
+      showToast('🤖 AI auto-disabled to prevent accidental costs. Re-enable in Settings.', 'ylw');
+    }
 
-      // Build a focused list: top 15 by market value, deduplicated by card name
-      const seen = new Set();
-      const targets = inv
-        .sort((a, b) => cn(b.marketValue) - cn(a.marketValue))
-        .filter(i => { if (seen.has(i.cardName)) return false; seen.add(i.cardName); return true; })
-        .slice(0, 15);
+    function buildMktProgressHTML(batchIdx, totalBatches, cardNames, skipped, updated, failed) {
+      const pct = totalBatches > 0 ? Math.round((batchIdx / totalBatches) * 100) : 0;
+      const cards = cardNames.map(n => '<span style="background:var(--s2);border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:9px;font-family:var(--mono)">' + n + '</span>').join(' ');
+      return '<div style="padding:8px 0">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        + '  <span class="spin" style="font-size:16px">⟳</span>'
+        + '  <strong style="font-size:12px">Batch ' + (batchIdx + 1) + ' of ' + totalBatches + '</strong>'
+        + '  <span style="font-size:10px;color:var(--ink3);font-family:var(--mono)">' + pct + '%</span>'
+        + '</div>'
+        + '<div style="background:var(--s3);border-radius:4px;height:6px;overflow:hidden;margin-bottom:10px">'
+        + '  <div style="background:var(--grn);height:100%;width:' + pct + '%;transition:width .3s;border-radius:4px"></div>'
+        + '</div>'
+        + '<div style="font-size:10px;color:var(--ink2);margin-bottom:6px">Searching eBay solds &amp; TCGPlayer for:</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">' + cards + '</div>'
+        + '<div style="display:flex;gap:12px;font-size:9px;font-family:var(--mono);color:var(--ink3)">'
+        + '  <span style="color:var(--grn)">' + updated + ' updated</span>'
+        + (skipped ? '  <span>' + skipped + ' skipped (recent)</span>' : '')
+        + (failed ? '  <span style="color:var(--red)">' + failed + ' failed</span>' : '')
+        + '</div>'
+        + '</div>';
+    }
 
-      const cardList = targets.map((item, idx) => {
+    function buildMktPrompt(cards) {
+      const cardList = cards.map((item, idx) => {
         const cost = cn(item.costBasis);
-        const costStr = cost > 0 ? `my cost $${cost.toFixed(2)}/card` : 'cost unknown (pack pull/trade)';
-        const gradeStr = item.grade ? `, ${item.gradingCompany || 'PSA'} ${item.grade}` : ', raw/ungraded';
-        const setStr = item.setName ? `, set: ${item.setName}` : '';
-        const numStr = item.cardNumber ? `, #${item.cardNumber}` : '';
-        const mktStr = cn(item.marketValue) > 0 ? `, Collector app market: $${cn(item.marketValue).toFixed(2)}` : '';
-        return `${idx + 1}. "${item.cardName}"${numStr} (${item.game || 'TCG'}${gradeStr}${setStr}, ${costStr}${mktStr})`;
+        const costStr = cost > 0 ? 'my cost $' + cost.toFixed(2) + '/card' : 'cost unknown';
+        const gradeStr = item.grade ? ', ' + (item.gradingCompany || 'PSA') + ' ' + item.grade : ', raw';
+        const setStr = item.setName ? ', set: ' + item.setName : '';
+        const numStr = item.cardNumber ? ', #' + item.cardNumber : '';
+        const mktStr = cn(item.marketValue) > 0 ? ', est: $' + cn(item.marketValue).toFixed(2) : '';
+        return (idx + 1) + '. "' + item.cardName + '"' + numStr + ' (' + (item.game || 'TCG') + gradeStr + setStr + ', ' + costStr + mktStr + ')';
       }).join('\n');
 
-      const prompt = `You are a TCG card price analyst. For each card below, search recent eBay sold listings and TCGPlayer market prices, then return ONLY a JSON array — no prose, no markdown fences.
+      return 'You are a TCG card price analyst. For each card below, search recent eBay sold listings and TCGPlayer market prices, then return ONLY a JSON array — no prose, no markdown fences.\n\n'
+        + 'Cards to price:\n' + cardList + '\n\n'
+        + 'Return a JSON array where each element has exactly these fields:\n'
+        + '{\n'
+        + '  "name": "exact card name from the list",\n'
+        + '  "midPrice": <number, estimated fair market value USD>,\n'
+        + '  "lowPrice": <number, low recent sale>,\n'
+        + '  "highPrice": <number, high recent sale>,\n'
+        + '  "trend": "up" | "down" | "stable",\n'
+        + '  "confidence": "high" | "medium" | "low",\n'
+        + '  "sources": ["eBay", "TCGPlayer"],\n'
+        + '  "gradeMultiple": <number or null, ratio of graded price to raw if applicable>,\n'
+        + '  "reason": "1 sentence: price context + trend (e.g. \'eBay solds avg $45 vs $30 cost = +50%, trending up\')"\n'
+        + '}\n\n'
+        + 'For cards you cannot find data on, use midPrice: null and confidence: "low".\n'
+        + 'Return ONLY the JSON array, nothing else.';
+    }
 
-Cards to price:
-${cardList}
+    function parseMktResponse(text, targets) {
+      let jsonStr = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
+      const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
+      if (arrMatch) jsonStr = arrMatch[0];
+      const priceArr = JSON.parse(jsonStr);
 
-Return a JSON array where each element has exactly these fields:
-{
-  "name": "exact card name from the list",
-  "midPrice": <number, estimated fair market value USD>,
-  "lowPrice": <number, low recent sale>,
-  "highPrice": <number, high recent sale>,
-  "trend": "up" | "down" | "stable",
-  "confidence": "high" | "medium" | "low",
-  "sources": ["eBay", "TCGPlayer"],
-  "gradeMultiple": <number or null, ratio of PSA 10 price to raw if applicable>,
-  "reason": "1 sentence explaining the signal including my cost basis (e.g. 'eBay solds avg $45 vs your $30 cost = +50% gain, trending up')"
-}
+      if (!DB.marketCache) DB.marketCache = {};
+      let updated = 0;
+      priceArr.forEach(pd => {
+        const item = targets.find(i =>
+          i.cardName.toLowerCase() === (pd.name || '').toLowerCase() ||
+          i.cardName.toLowerCase().includes((pd.name || '').toLowerCase().slice(0, 15))
+        );
+        if (item && pd.midPrice) {
+          DB.marketCache[item.id] = {
+            midPrice: pd.midPrice,
+            lowPrice: pd.lowPrice || null,
+            highPrice: pd.highPrice || null,
+            trend: pd.trend || 'stable',
+            confidence: pd.confidence || 'low',
+            sources: pd.sources || ['Web search'],
+            gradeMultiple: pd.gradeMultiple || null,
+            reason: pd.reason || '',
+            fetchedAt: Date.now()
+          };
+          updated++;
+        }
+      });
+      return updated;
+    }
 
-For cards you cannot find data on, use midPrice: null and confidence: "low".
-Return ONLY the JSON array, nothing else.`;
+    async function batchRefreshPrices(progressEl) {
+      const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
+      if (!inv.length) { showToast('No inventory cards to price.', 'ylw'); return { totalUpdated: 0 }; }
 
-      try {
-        const text = await claudeAPICall({ prompt, maxTokens: 8000, useWebSearch: true });
-        let jsonStr = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
-        const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
-        if (arrMatch) jsonStr = arrMatch[0];
-        const priceArr = JSON.parse(jsonStr);
+      // Dedup by card name, sort by market value descending
+      const seen = new Set();
+      const allCards = inv
+        .sort((a, b) => cn(b.marketValue) - cn(a.marketValue))
+        .filter(i => { if (seen.has(i.cardName)) return false; seen.add(i.cardName); return true; });
 
-        // Merge into cache keyed by inventory item id
-        if (!DB.marketCache) DB.marketCache = {};
-        priceArr.forEach(pd => {
-          const item = targets.find(i => i.cardName.toLowerCase() === (pd.name || '').toLowerCase()
-            || i.cardName.toLowerCase().includes((pd.name || '').toLowerCase().slice(0, 15)));
-          if (item) {
-            DB.marketCache[item.id] = {
-              midPrice: pd.midPrice || null,
-              lowPrice: pd.lowPrice || null,
-              highPrice: pd.highPrice || null,
-              trend: pd.trend || 'stable',
-              confidence: pd.confidence || 'low',
-              sources: pd.sources || ['Web search'],
-              gradeMultiple: pd.gradeMultiple || null,
-              reason: pd.reason || '',
-              fetchedAt: Date.now()
-            };
-          }
-        });
+      // Filter out recently-priced cards
+      const now = Date.now();
+      if (!DB.marketCache) DB.marketCache = {};
+      const stale = allCards.filter(i => {
+        const cached = DB.marketCache[i.id];
+        return !cached?.fetchedAt || (now - cached.fetchedAt) > MKT_CACHE_TTL;
+      });
+      const skipped = allCards.length - stale.length;
 
-        DB.marketCacheTime = Date.now();
-        save();
-        buildIntelRows(inv);
-        // Also refresh inventory page if open so signal badges show
-        if (currentPage === 'inv') renderInv();
+      if (!stale.length) {
+        showToast('All ' + allCards.length + ' cards have prices from the last 24h — no API calls needed.', 'grn');
+        return { totalUpdated: 0, totalSkipped: skipped, noWork: true };
+      }
 
-      } catch (err) {
-        console.error('Market intel error:', err);
-        $('#intelBody').innerHTML = `<div class="intel-loading" style="color:var(--red)">
-      ✗ Could not fetch prices: ${err.message}<br>
-      <span style="font-size:10px;color:var(--ink3)">Using Collector app estimates for signals instead.</span>
-    </div>`;
-        // Fall back to collector app values
-        if (!DB.marketCache) DB.marketCache = {};
-        targets.forEach(item => {
-          if (!DB.marketCache[item.id]?.midPrice && cn(item.marketValue) > 0) {
-            DB.marketCache[item.id] = {
-              midPrice: cn(item.marketValue), trend: 'stable',
-              confidence: 'low', sources: ['Collector app'], reason: 'Collector app estimate — tap Refresh for live data'
-            };
-          }
-        });
-        DB.marketCacheTime = Date.now();
-        save();
-        buildIntelRows(inv);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '↻ Refresh Prices';
+      // Chunk into batches
+      const batches = [];
+      for (let i = 0; i < stale.length; i += MKT_BATCH_SIZE) {
+        batches.push(stale.slice(i, i + MKT_BATCH_SIZE));
+      }
+
+      let totalUpdated = 0, totalFailed = 0;
+
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        const names = batch.map(c => c.cardName);
+
+        // Update progress UI
+        if (progressEl) progressEl.innerHTML = buildMktProgressHTML(i, batches.length, names, skipped, totalUpdated, totalFailed);
+
+        try {
+          const prompt = buildMktPrompt(batch);
+          const text = await claudeAPICall({ prompt, maxTokens: 4096, useWebSearch: true });
+          const updated = parseMktResponse(text, batch);
+          totalUpdated += updated;
+
+          // Save after each batch so partial results persist
+          DB.marketCacheTime = Date.now();
+          save();
+        } catch (err) {
+          console.error('Batch ' + (i + 1) + ' error:', err);
+          totalFailed += batch.length;
+          showToast('Batch ' + (i + 1) + ' failed: ' + err.message, 'red');
+        }
+
+        // Brief pause between batches to avoid rate limits
+        if (i < batches.length - 1) await new Promise(r => setTimeout(r, 1000));
+      }
+
+      // Fall back to Collector estimates for any still-unpriced cards
+      allCards.forEach(item => {
+        if (!DB.marketCache[item.id]?.midPrice && cn(item.marketValue) > 0) {
+          DB.marketCache[item.id] = {
+            midPrice: cn(item.marketValue), trend: 'stable',
+            confidence: 'low', sources: ['Collector app'],
+            reason: 'Collector estimate — refresh for live data'
+          };
+        }
+      });
+      DB.marketCacheTime = Date.now();
+      save();
+
+      return { totalUpdated, totalFailed, totalSkipped: skipped, totalCards: allCards.length, batches: batches.length };
+    }
+
+    // Thin wrapper for dashboard intel tab
+    async function refreshMarketIntel() {
+      if (!requireAI('Market Intelligence (Refresh Prices)')) return;
+      const btn = $('#intelRefreshBtn');
+      const body = $('#intelBody');
+      if (btn) { btn.disabled = true; btn.textContent = '⟳ Fetching…'; }
+
+      const result = await batchRefreshPrices(body);
+      const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
+      buildIntelRows(inv);
+      if (currentPage === 'inv') renderInv();
+
+      if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
+      if (result.totalUpdated > 0) {
+        showToast('Updated ' + result.totalUpdated + ' cards' + (result.totalSkipped ? ', ' + result.totalSkipped + ' skipped (recent)' : ''), 'grn');
+        autoDisableAI();
+      } else if (!result.noWork) {
+        showToast('No prices updated — check your API key', 'red');
       }
     }
 
@@ -10972,6 +11089,7 @@ Return ONLY the JSON array, nothing else.`;
       }
     }
 
+    // Thin wrapper for market signals page
     async function refreshMarketPage() {
       if (!requireAI('Market Intelligence (Refresh Prices)')) return;
       const inv = DB.inventory.filter(i => !i.isPersonal && i.cardName);
@@ -10979,131 +11097,32 @@ Return ONLY the JSON array, nothing else.`;
 
       const btn = document.getElementById('mktRefreshBtn');
       const rows = document.getElementById('mktSignalRows');
-
-      // ── Loading state ──
       if (btn) { btn.disabled = true; btn.textContent = '⟳ Fetching…'; }
-      if (rows) rows.innerHTML = '<div class="intel-loading"><span class="spin">⟳</span> Fetching live prices from eBay &amp; TCGPlayer…</div>';
 
-      // Pre-fetch card images in background (don't block price fetch)
+      // Pre-fetch card images in background
       inv.forEach(item => {
-        const cached = DB.marketCache[item.id];
-        if (!cached?.imageUrl) {
+        if (!DB.marketCache?.[item.id]?.imageUrl) {
           fetchCardImage(item.cardName, item.game).then(url => {
-            if (url && DB.marketCache[item.id]) {
-              DB.marketCache[item.id].imageUrl = url;
-            } else if (url) {
+            if (url) {
               DB.marketCache[item.id] = DB.marketCache[item.id] || {};
               DB.marketCache[item.id].imageUrl = url;
+              const imgEl = document.getElementById('cimg-' + item.id);
+              if (imgEl) { imgEl.src = url; imgEl.style.opacity = '1'; }
             }
-            // Swap image in DOM if card is currently rendered
-            const imgEl = document.getElementById('cimg-' + item.id);
-            if (imgEl && url) { imgEl.src = url; imgEl.style.opacity = '1'; }
           });
         }
       });
 
-      // Build card list (top 25 by market value, deduped by name)
-      const seen = new Set();
-      const targets = inv
-        .sort((a, b) => cn(b.marketValue) - cn(a.marketValue))
-        .filter(i => { if (seen.has(i.cardName)) return false; seen.add(i.cardName); return true; })
-        .slice(0, 25);
+      const result = await batchRefreshPrices(rows);
+      renderMarket();
+      if (currentPage === 'inv') renderInv();
 
-      const cardList = targets.map((item, idx) => {
-        const cost = cn(item.costBasis);
-        const costStr = cost > 0 ? `my cost $${cost.toFixed(2)}/card` : 'cost unknown';
-        const gradeStr = item.grade ? `, ${item.gradingCompany || 'PSA'} ${item.grade}` : ', raw';
-        const setStr = item.setName ? `, set: ${item.setName}` : '';
-        const numStr = item.cardNumber ? `, #${item.cardNumber}` : '';
-        const mktStr = cn(item.marketValue) > 0 ? `, est: $${cn(item.marketValue).toFixed(2)}` : '';
-        return `${idx + 1}. "${item.cardName}"${numStr} (${item.game || 'TCG'}${gradeStr}${setStr}, ${costStr}${mktStr})`;
-      }).join('\n');
-
-      const prompt = `You are a TCG card price analyst. For each card below, search recent eBay sold listings and TCGPlayer market prices, then return ONLY a JSON array — no prose, no markdown fences.
-
-Cards to price:
-${cardList}
-
-Return a JSON array where each element has exactly these fields:
-{
-  "name": "exact card name from the list",
-  "midPrice": <number, estimated fair market value USD>,
-  "lowPrice": <number, low recent sale>,
-  "highPrice": <number, high recent sale>,
-  "trend": "up" | "down" | "stable",
-  "confidence": "high" | "medium" | "low",
-  "sources": ["eBay", "TCGPlayer"],
-  "gradeMultiple": <number or null, ratio of graded price to raw if applicable>,
-  "reason": "1 sentence: price context + trend (e.g. 'eBay solds avg $45 vs $30 cost = +50%, trending up')"
-}
-
-For cards you cannot find data on, use midPrice: null and confidence: "low".
-Return ONLY the JSON array, nothing else.`;
-
-      try {
-        const text = await claudeAPICall({ prompt, maxTokens: 8000, useWebSearch: true });
-        let jsonStr = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
-        const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
-        if (arrMatch) jsonStr = arrMatch[0];
-        const priceArr = JSON.parse(jsonStr);
-
-        if (!DB.marketCache) DB.marketCache = {};
-        let updated = 0;
-        priceArr.forEach(pd => {
-          const item = targets.find(i =>
-            i.cardName.toLowerCase() === (pd.name || '').toLowerCase() ||
-            i.cardName.toLowerCase().includes((pd.name || '').toLowerCase().slice(0, 15))
-          );
-          if (item && pd.midPrice) {
-            DB.marketCache[item.id] = {
-              midPrice: pd.midPrice,
-              lowPrice: pd.lowPrice || null,
-              highPrice: pd.highPrice || null,
-              trend: pd.trend || 'stable',
-              confidence: pd.confidence || 'low',
-              sources: pd.sources || ['Web search'],
-              gradeMultiple: pd.gradeMultiple || null,
-              reason: pd.reason || '',
-              fetchedAt: Date.now()
-            };
-            updated++;
-          }
-        });
-
-        DB.marketCacheTime = Date.now();
-        save();
-
-        // ── Success state ──
-        renderMarket();
-        if (btn) { btn.disabled = false; btn.textContent = '✓ Prices Updated'; }
-        showToast('✓ Updated prices for ' + updated + ' of ' + targets.length + ' cards', 'grn');
-        // Reset button text after 3s
-        setTimeout(() => { if (btn) btn.textContent = '↻ Refresh Prices'; }, 3000);
-
-        // Also refresh inventory page if open
-        if (currentPage === 'inv') renderInv();
-
-      } catch (err) {
-        console.error('Market refresh error:', err);
-
-        // Fall back to Collector app values for any unpriced cards
-        if (!DB.marketCache) DB.marketCache = {};
-        targets.forEach(item => {
-          if (!DB.marketCache[item.id]?.midPrice && cn(item.marketValue) > 0) {
-            DB.marketCache[item.id] = {
-              midPrice: cn(item.marketValue), trend: 'stable',
-              confidence: 'low', sources: ['Collector app'],
-              reason: 'Collector app estimate — tap Refresh for live data',
-              fetchedAt: Date.now()
-            };
-          }
-        });
-        DB.marketCacheTime = Date.now();
-        save();
-        renderMarket();
-
-        if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
-        showToast('✗ Fetch failed — using Collector estimates', 'red');
+      if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Prices'; }
+      if (result.totalUpdated > 0) {
+        showToast('Updated ' + result.totalUpdated + ' cards' + (result.totalSkipped ? ', ' + result.totalSkipped + ' skipped (recent)' : '') + (result.totalFailed ? ', ' + result.totalFailed + ' failed' : ''), 'grn');
+        autoDisableAI();
+      } else if (!result.noWork) {
+        showToast('No prices updated — check your API key', 'red');
       }
     }
 
