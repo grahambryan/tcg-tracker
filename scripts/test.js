@@ -475,7 +475,7 @@ test('smartStats: col row + card count', `
   if(s.totalQty!==3) throw new Error('totalQty: '+s.totalQty);
 `);
 test('smartStats: wne row count', `
-  var s=smartStats('wne',[{'SELLER_EARNINGS':'100','TRANSACTION_TYPE':'SALE'},{'SELLER_EARNINGS':'50','TRANSACTION_TYPE':'SALE'}]);
+  var s=smartStats('wne',[{'SELLER_EARNINGS':'100','TRANSACTION_TYPE':'ORDER_EARNINGS','ORIGINAL_ITEM_PRICE':'120'},{'SELLER_EARNINGS':'50','TRANSACTION_TYPE':'ORDER_EARNINGS','ORIGINAL_ITEM_PRICE':'60'}]);
   if(s.sales!==2) throw new Error('sales: '+s.sales);
 `);
 test('smartRender: no crash with empty files', `

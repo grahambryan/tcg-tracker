@@ -4684,8 +4684,8 @@ function smartStats(type, rows) {
       
       // Filter to actual sales (not refunds/adjustments)
       const sales = rows.filter(r => {
-        const txType = (r['TRANSACTION_TYPE']||r['transaction_type']||'sale').toUpperCase();
-        return txType.includes('SALE') || txType === 'SALE' || txType === '';
+        const txType = (r['TRANSACTION_TYPE']||r['transaction_type']||'').toUpperCase();
+        return txType === 'ORDER_EARNINGS' || txType.includes('SALE') || txType === '';
       });
       const dupes = sales.filter(r => seenHash(hashStr((r[orderKey]||'') + '|' + (r[titleKey]||''))));
       const newSales = sales.length - dupes.length;
@@ -4801,11 +4801,12 @@ function smartCardHtml(fileId, fileName, type, rows, stats) {
     +     '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' + statsHtml + '</div>'
     +     (dateHtml ? '<div style="font-size:8px;color:var(--ink3);font-family:var(--mono);margin-top:5px;letter-spacing:.3px">' + dateHtml + '</div>' : '')
     +   '</div>'
-    +   '<div style="flex-shrink:0">'
+    +   '<div style="flex-shrink:0;display:flex;align-items:center;gap:6px">'
     +     (isUnknown
     ?      '<span style="font-size:9px;color:var(--red);font-family:var(--mono);">SKIP</span>'
     :      '<button class="smart-import-btn" onclick="smartImportOne(\'' + fileId + '\')" style="background:var(--acc);color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:10px;font-family:var(--mono);font-weight:700;cursor:pointer" id="sibtn-' + fileId + '">Import</button>'
     )
+    +     '<button onclick="smartRemoveOne(\'' + fileId + '\')" title="Remove file" style="background:none;border:1px solid var(--bd);border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink3);font-size:12px;transition:all .15s" onmouseover="this.style.borderColor=\'var(--red)\';this.style.color=\'var(--red)\'" onmouseout="this.style.borderColor=\'var(--bd)\';this.style.color=\'var(--ink3)\'">✕</button>'
     +   '</div>'
     + '</div>'
     + '</div>';
@@ -4864,9 +4865,12 @@ function smartRender() {
     + importable.length + ' recognized'
     + (unknown.length ? ' · <span style="color:var(--red)">' + unknown.length + ' skipped</span>' : '')
     + '</div>'
+    + '<div style="display:flex;gap:6px">'
+    + '<button onclick="smartClearAll()" style="background:var(--s2);color:var(--red);border:1px solid rgba(255,68,102,.3);border-radius:7px;padding:6px 12px;font-size:11px;font-family:var(--mono);font-weight:700;cursor:pointer">✕ Clear All</button>'
     + (importable.length > 1
     ? '<button onclick="smartImportAll()" style="background:var(--acc);color:#fff;border:none;border-radius:7px;padding:6px 16px;font-size:11px;font-family:var(--mono);font-weight:700;cursor:pointer">⬇ Import All (' + totalNew + ' new)</button>'
     : '')
+    + '</div>'
     + '</div>';
 
   html += ids.map(id => {
@@ -5497,7 +5501,8 @@ function renderWnEarningsInPanel(rows, panelPrefix) {
     }).join('')}</tbody>
   </table></div>`;
 
-  $('#out-' + panelPrefix).innerHTML = html;
+  const outEl = $('#out-' + panelPrefix);
+  if (outEl) outEl.innerHTML = html;
 }
 
 function renderCSellsImport(rows) {

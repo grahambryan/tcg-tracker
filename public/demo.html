@@ -4687,8 +4687,8 @@ function smartStats(type, rows) {
       
       // Filter to actual sales (not refunds/adjustments)
       const sales = rows.filter(r => {
-        const txType = (r['TRANSACTION_TYPE']||r['transaction_type']||'sale').toUpperCase();
-        return txType.includes('SALE') || txType === 'SALE' || txType === '';
+        const txType = (r['TRANSACTION_TYPE']||r['transaction_type']||'').toUpperCase();
+        return txType === 'ORDER_EARNINGS' || txType.includes('SALE') || txType === '';
       });
       const dupes = sales.filter(r => seenHash(hashStr((r[orderKey]||'') + '|' + (r[titleKey]||''))));
       const newSales = sales.length - dupes.length;
@@ -5500,7 +5500,8 @@ function renderWnEarningsInPanel(rows, panelPrefix) {
     }).join('')}</tbody>
   </table></div>`;
 
-  $('#out-' + panelPrefix).innerHTML = html;
+  const outEl = $('#out-' + panelPrefix);
+  if (outEl) outEl.innerHTML = html;
 }
 
 function renderCSellsImport(rows) {
