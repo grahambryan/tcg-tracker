@@ -1,5 +1,5 @@
-const CACHE = 'tcg-v1';
-const SHELL = ['/', '/manifest.json', '/icon-192.svg', '/icon-512.svg'];
+const CACHE = 'tcg-v2';
+const SHELL = ['./', 'manifest.json', 'icon-192.svg', 'icon-512.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   // Never cache API calls
-  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.includes('/api/')) return;
 
   // Cache-first for app shell and static assets
   e.respondWith(

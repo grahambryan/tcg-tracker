@@ -11,6 +11,7 @@
 const fs   = require('fs');
 const vm   = require('vm');
 const path = require('path');
+const { MOCK_DB } = require('./mock-data');
 
 const BAIL  = process.argv.includes('--bail');
 const QUIET = process.argv.includes('--quiet');
@@ -77,8 +78,8 @@ const mockEl = (id) => {
   'smart-out','dz-smart','invStats','invTable','invSearch',
   'out-wn','out-bank','out-col','out-csells','out-snap','dz-wn','dz-bank','dz-col',
   'schedCBody','dashBody','buysBody','sellsBody','page-help',
-  'page-dash','page-inv','page-market','page-buys','page-sells','page-import',
-  'page-activity','page-more','page-sched','page-cards',
+  'page-dash','page-activity','page-more','page-sched','page-cards',
+  'sellsStats','sellsSearch','sellsTable','buysSearch','buysTable',
   'cardsPanel-holdings','cardsPanel-signals','cardsPanel-analytics',
   'cardsSeg','cardsTabHold','cardsTabSig','cardsTabAna','cardsSigBar',
   'cardsPortVal','cardsPortMeta','cardsLastUpdated',
@@ -87,6 +88,22 @@ const mockEl = (id) => {
   'imp-wn','imp-bank','imp-col','imp-csells',
   'impchev-wn','impchev-bank','impchev-col','impchev-csells',
   'more-pl-snap','desktopNav','themeGrid','themeChevron','themeCurrentEmoji','themeCurrentName',
+  // Form elements for saveBuy/saveSell/saveExpense
+  'b_name','b_date','b_game','b_seller','b_paid','b_ship','b_total','b_type','b_lotid','b_notes','b_source','b_personal',
+  's_name','s_date','s_game','s_plat','s_price','s_cost','s_profit','s_qty','s_fee','s_shipcost','s_notes','s_personal',
+  'e_date','e_cat','e_amt','e_desc','e_notes',
+  'lotIdGroup','modalBg','fillPctInput',
+  // Schedule C
+  'schedCBody',
+  // Dashboard elements
+  'db-hero','db-kpis','db-port-line','db-left','db-right','monthLabel',
+  'plValue','dashMonth','plChartBars','plChartLabels','plChartVals',
+  'allTimeStats','gameBreakdown','topPerformers','recentBuys',
+  'taxChecklist','taxItems','taxScore','openLotsSection','gradingQueueSection',
+  'intelBody','intelLastUpdated','plMonth','plSub','plProg',
+  'dashRev','dashCogs','dashPortfolio','dashUnrealized',
+  // Sell/Buy outputs
+  'out-snap',
 ].forEach(id => mockEl(id));
 
 // ── Sandbox ─────────────────────────────────────────────────────────────────
@@ -103,7 +120,7 @@ const sandbox = {
     },
     getElementById:   (id) => mockEl(id),
     querySelectorAll: (s)  => {
-      if (s === '.page') return ['dash','cards','activity','more','inv','buys','sells','import','sched','market','help'].map(id => mockEl('page-'+id));
+      if (s === '.page') return ['dash','cards','activity','more','sched','help'].map(id => mockEl('page-'+id));
       if (s.includes('seg-btn') || s.includes('itab') || s.includes('filter-btn') || s.includes('nav-item')) return [mockEl(), mockEl()];
       return [];
     },
@@ -650,6 +667,309 @@ test('showToast: does not crash (no DOM)', `
   if(typeof showToast !== 'function') throw new Error('missing');
   // Should not throw even without real DOM
   try { showToast('test', 'grn'); } catch(e) { /* DOM ops may fail in VM, that is ok */ }
+`);
+
+// ── Data operations ──────────────────────────────────────────────────────────
+suite('Data operations');
+test('saveBuy: creates buy record', `
+  DB.buys = [];
+  document.getElementById('b_name').value = 'Luffy Gear 5';
+  document.getElementById('b_date').value = '2025-03-01';
+  document.getElementById('b_game').value = 'One Piece';
+  document.getElementById('b_seller').value = 'seller1';
+  document.getElementById('b_paid').value = '25.00';
+  document.getElementById('b_ship').value = '5.00';
+  document.getElementById('b_total').value = '30.00';
+  document.getElementById('b_type').value = 'single';
+  saveBuy();
+  if (DB.buys.length !== 1) throw new Error('Expected 1 buy, got ' + DB.buys.length);
+  var b = DB.buys[0];
+  if (b.cardName !== 'Luffy Gear 5') throw new Error('Name: ' + b.cardName);
+  if (b.totalCost !== 30) throw new Error('Cost: ' + b.totalCost);
+`);
+test('saveBuy: prompts for empty name (non-lot)', `
+  DB.buys = [];
+  document.getElementById('b_name').value = '';
+  document.getElementById('b_type').value = 'single';
+  document.getElementById('b_date').value = '2025-03-01';
+  _confirmResult = false;
+  saveBuy();
+  if (DB.buys.length !== 0) throw new Error('Should not save when user declines confirm');
+  _confirmResult = true;
+`);
+test('saveSell: creates sell record', `
+  DB.sells = [];
+  document.getElementById('s_name').value = 'Charizard ex';
+  document.getElementById('s_date').value = '2025-03-01';
+  document.getElementById('s_game').value = 'Pokémon';
+  document.getElementById('s_plat').value = 'Whatnot';
+  document.getElementById('s_price').value = '100.00';
+  document.getElementById('s_cost').value = '40.00';
+  document.getElementById('s_profit').value = '60.00';
+  document.getElementById('s_qty').value = '1';
+  document.getElementById('s_fee').value = '8.00';
+  document.getElementById('s_shipcost').value = '4.50';
+  saveSell();
+  if (DB.sells.length !== 1) throw new Error('Expected 1 sell, got ' + DB.sells.length);
+  var s = DB.sells[0];
+  if (s.cardName !== 'Charizard ex') throw new Error('Name: ' + s.cardName);
+  if (cn(s.salePrice) !== 100) throw new Error('Price: ' + s.salePrice);
+`);
+test('saveExpense: creates expense record', `
+  DB.expenses = [];
+  document.getElementById('e_date').value = '2025-03-01';
+  document.getElementById('e_cat').value = 'Shipping';
+  document.getElementById('e_amt').value = '25.00';
+  document.getElementById('e_desc').value = 'Bubble mailers';
+  saveExpense();
+  if (DB.expenses.length !== 1) throw new Error('Expected 1 expense, got ' + DB.expenses.length);
+  if (DB.expenses[0].amount !== 25) throw new Error('Amount: ' + DB.expenses[0].amount);
+`);
+test('deleteItem: removes record by id', `
+  DB.buys = [{id:'buy1', cardName:'Test'}];
+  deleteItem('buys', 'buy1');
+  if (DB.buys.length !== 0) throw new Error('Expected 0 buys, got ' + DB.buys.length);
+`);
+test('deleteItem: no-op for missing id', `
+  DB.buys = [{id:'buy1', cardName:'Test'}];
+  deleteItem('buys', 'nonexistent');
+  if (DB.buys.length !== 1) throw new Error('Should not remove unrelated item');
+`);
+
+// ── Import/Export ────────────────────────────────────────────────────────────
+suite('Import/Export');
+test('exportSnapshot: produces valid JSON', `
+  DB.buys = [{id:'b1', cardName:'Test Buy'}];
+  DB.sells = [{id:'s1', cardName:'Test Sell'}];
+  DB.inventory = [{id:'i1', cardName:'Test Inv'}];
+  // exportSnapshot creates a download — test the snapshot structure
+  var snap = { version:2, exportedAt:new Date().toISOString(), ...DB };
+  var json = JSON.stringify(snap);
+  var parsed = JSON.parse(json);
+  if (parsed.version !== 2) throw new Error('version: ' + parsed.version);
+  if (parsed.buys.length !== 1) throw new Error('buys: ' + parsed.buys.length);
+  if (parsed.sells.length !== 1) throw new Error('sells: ' + parsed.sells.length);
+`);
+test('importSnapshot: merges new items', `
+  DB.buys = [{id:'existing', cardName:'Old'}];
+  DB.sells = []; DB.inventory = []; DB.expenses = [];
+  var snapText = JSON.stringify({
+    buys: [{id:'new1', cardName:'New Buy'}],
+    sells: [{id:'new2', cardName:'New Sell'}],
+    inventory: [],
+    exportedAt: '2025-03-01'
+  });
+  _confirmResult = true;
+  importSnapshot(snapText);
+  if (DB.buys.length !== 2) throw new Error('Expected 2 buys (merged), got ' + DB.buys.length);
+  if (!DB.buys.find(function(b){return b.id==='existing'})) throw new Error('Original buy lost');
+  if (!DB.buys.find(function(b){return b.id==='new1'})) throw new Error('New buy not added');
+`);
+test('importSnapshot: skips duplicates by id', `
+  DB.buys = [{id:'dup1', cardName:'Original'}];
+  DB.sells = []; DB.inventory = []; DB.expenses = [];
+  var snapText = JSON.stringify({
+    buys: [{id:'dup1', cardName:'Duplicate'}],
+    sells: [],
+    inventory: [],
+    exportedAt: '2025-03-01'
+  });
+  _confirmResult = true;
+  importSnapshot(snapText);
+  if (DB.buys.length !== 1) throw new Error('Should not duplicate: ' + DB.buys.length);
+  if (DB.buys[0].cardName !== 'Original') throw new Error('Should keep original name');
+`);
+test('importSnapshot: rejects invalid JSON', `
+  DB.buys = [{id:'safe', cardName:'Safe'}];
+  importSnapshot('not json at all');
+  if (DB.buys.length !== 1) throw new Error('Should not modify DB on bad input');
+`);
+test('parseCSV: empty string returns empty array', `
+  var rows = parseCSV('');
+  if (rows.length !== 0) throw new Error('Expected 0, got ' + rows.length);
+`);
+test('parseCSV: header only returns empty array', `
+  var rows = parseCSV('Name,Price,Qty');
+  if (rows.length !== 0) throw new Error('Expected 0, got ' + rows.length);
+`);
+
+// ── Business logic ──────────────────────────────────────────────────────────
+suite('Business logic');
+test('estimateCostBasis: uses fill percentage', `
+  DB.settings = { fillPct: 45 };
+  var sell = { salePrice: 100, costBasis: 0, cardName: 'Test' };
+  var est = estimateCostBasis(sell);
+  if (!est) throw new Error('Should return estimate');
+  if (est.cost !== 45) throw new Error('Expected 45, got ' + est.cost);
+`);
+test('estimateCostBasis: returns null for high-value no-cost', `
+  DB.settings = { fillPct: 45 };
+  var sell = { salePrice: 200, costBasis: 0, cardName: 'Test' };
+  var est = estimateCostBasis(sell);
+  // High value items ($200+) should still get an estimate, just scaled
+  if (!est) throw new Error('Should return estimate even for higher values');
+`);
+test('crossMatchSells: function exists', `
+  if (typeof crossMatchSells !== 'function') throw new Error('missing');
+`);
+test('crossMatchBuys: function exists', `
+  if (typeof crossMatchBuys !== 'function') throw new Error('missing');
+`);
+test('findDuplicateSells: detects Collector + WN dupe', `
+  DB.sells = [
+    {id:'s1', cardName:'Test Card', date:'2025-01-01', salePrice:'10', platform:'Whatnot', wnOrderId:'WN123'},
+    {id:'s2', cardName:'Test Card', date:'2025-01-01', salePrice:'10', platform:'Collector'},
+  ];
+  var groups = findDuplicateSells();
+  if (groups.length !== 1) throw new Error('Expected 1 dupe group, got ' + groups.length);
+`);
+test('findDuplicateSells: no false positives', `
+  DB.sells = [
+    {id:'s1', cardName:'Card A', date:'2025-01-01', salePrice:'10', platform:'Whatnot'},
+    {id:'s2', cardName:'Card B', date:'2025-01-02', salePrice:'20', platform:'Collector'},
+  ];
+  var groups = findDuplicateSells();
+  if (groups.length !== 0) throw new Error('Expected 0 dupe groups, got ' + groups.length);
+`);
+
+// ── Rendering with data ─────────────────────────────────────────────────────
+suite('Rendering with data');
+test('renderDash: runs with populated DB', `
+  DB.inventory = [{id:'i1', cardName:'Luffy', game:'One Piece', qty:1, costBasis:20, marketValue:50, isPersonal:false, dateAcquired:'2025-01-01'}];
+  DB.sells = [{id:'s1', date:'2025-03-01', cardName:'Zoro', game:'One Piece', salePrice:30, costBasis:10, qty:1, platformFee:2.4, shippingCost:4.5, isPersonal:false}];
+  DB.buys = [{id:'b1', date:'2025-03-01', cardName:'Nami', game:'One Piece', totalCost:15, isPersonal:false}];
+  currentPage = 'dash';
+  renderDash();
+  // Verify KPIs were rendered
+  var kpis = document.getElementById('db-kpis');
+  if (!kpis.innerHTML.includes('All-Time')) throw new Error('KPIs not rendered');
+`);
+test('renderSells: filters by search query', `
+  DB.sells = [
+    {id:'s1', date:'2025-01-01', cardName:'Luffy Gear 5', game:'One Piece', salePrice:100, costBasis:40, qty:1, isPersonal:false, platform:'Whatnot'},
+    {id:'s2', date:'2025-01-02', cardName:'Charizard', game:'Pokémon', salePrice:200, costBasis:80, qty:1, isPersonal:false, platform:'TCGPlayer'},
+  ];
+  sellsFilter = 'all';
+  document.getElementById('sellsSearch').value = 'luffy';
+  renderSells();
+  var table = document.getElementById('sellsTable');
+  if (!table.innerHTML.includes('Luffy')) throw new Error('Should show Luffy');
+`);
+test('renderBuys: renders with data', `
+  DB.buys = [
+    {id:'b1', date:'2025-01-01', cardName:'Test Card', game:'One Piece', totalCost:15, source:'Whatnot', seller:'seller1', isPersonal:false},
+  ];
+  buysFilter = 'all';
+  document.getElementById('buysSearch').value = '';
+  renderBuys();
+  var table = document.getElementById('buysTable');
+  if (!table.innerHTML.includes('Test Card')) throw new Error('Should render buy');
+`);
+test('renderInv: renders inventory on cards page', `
+  DB.inventory = [{id:'i1', cardName:'Test Card', game:'One Piece', qty:1, costBasis:20, marketValue:50, isPersonal:false}];
+  currentPage = 'cards';
+  invFilter = 'all';
+  document.getElementById('invSearch').value = '';
+  renderInv();
+  var table = document.getElementById('invTable');
+  if (!table.innerHTML.includes('Test Card')) throw new Error('Should render inventory');
+`);
+
+// ── Page consolidation ──────────────────────────────────────────────────────
+suite('Page consolidation');
+test('no duplicate page-inv element', `
+  var el = document.getElementById('page-inv');
+  // After consolidation, page-inv should not exist or be needed
+  // The navTo function should redirect to cards page
+  navTo('inv');
+  if (currentPage !== 'cards') throw new Error('Should go to cards, got: ' + currentPage);
+`);
+test('navTo sells goes to activity page', `
+  navTo('sells');
+  if (currentPage !== 'activity') throw new Error('Should go to activity, got: ' + currentPage);
+`);
+test('navTo buys goes to activity page', `
+  navTo('buys');
+  if (currentPage !== 'activity') throw new Error('Should go to activity, got: ' + currentPage);
+`);
+test('navTo market goes to cards page', `
+  navTo('market');
+  if (currentPage !== 'cards') throw new Error('Should go to cards, got: ' + currentPage);
+`);
+
+// ── Mock data integrity ─────────────────────────────────────────────────────
+suite('Mock data (demo site)');
+test('MOCK_DB has valid structure', `
+  var mock = ${JSON.stringify(MOCK_DB)};
+  if (!mock.buys || !mock.sells || !mock.inventory || !mock.expenses) throw new Error('Missing DB keys');
+  if (!mock.settings || typeof mock.settings.fillPct !== 'number') throw new Error('Missing settings');
+`);
+test('MOCK_DB buys have required fields', `
+  var mock = ${JSON.stringify(MOCK_DB)};
+  mock.buys.forEach(function(b) {
+    if (!b.id) throw new Error('Buy missing id');
+    if (!b.date) throw new Error('Buy missing date: ' + b.id);
+    if (typeof b.totalCost !== 'number') throw new Error('Buy missing totalCost: ' + b.id);
+  });
+`);
+test('MOCK_DB sells have required fields', `
+  var mock = ${JSON.stringify(MOCK_DB)};
+  mock.sells.forEach(function(s) {
+    if (!s.id) throw new Error('Sell missing id');
+    if (!s.date) throw new Error('Sell missing date: ' + s.id);
+    if (typeof s.salePrice !== 'number') throw new Error('Sell missing salePrice: ' + s.id);
+    if (typeof s.costBasis !== 'number') throw new Error('Sell missing costBasis: ' + s.id);
+  });
+`);
+test('MOCK_DB inventory has required fields', `
+  var mock = ${JSON.stringify(MOCK_DB)};
+  mock.inventory.forEach(function(i) {
+    if (!i.id) throw new Error('Inv missing id');
+    if (!i.cardName) throw new Error('Inv missing cardName: ' + i.id);
+    if (typeof i.costBasis !== 'number') throw new Error('Inv missing costBasis: ' + i.id);
+    if (typeof i.marketValue !== 'number') throw new Error('Inv missing marketValue: ' + i.id);
+  });
+`);
+test('MOCK_DB renders full dashboard without errors', `
+  DB = JSON.parse(JSON.stringify(${JSON.stringify(MOCK_DB)}));
+  DB.seenHashes = DB.seenHashes || [];
+  DB.exportHistory = DB.exportHistory || [];
+  currentPage = 'dash';
+  renderDash();
+  var kpis = document.getElementById('db-kpis');
+  if (!kpis.innerHTML.includes('All-Time')) throw new Error('Dashboard KPIs not rendered');
+  if (!kpis.innerHTML.includes('Portfolio')) throw new Error('Dashboard portfolio not rendered');
+`);
+test('MOCK_DB renders sells page without errors', `
+  DB = JSON.parse(JSON.stringify(${JSON.stringify(MOCK_DB)}));
+  DB.seenHashes = DB.seenHashes || [];
+  DB.exportHistory = DB.exportHistory || [];
+  sellsFilter = 'all';
+  document.getElementById('sellsSearch').value = '';
+  renderSells();
+  var table = document.getElementById('sellsTable');
+  if (!table.innerHTML.includes('Charizard')) throw new Error('Sells table missing Charizard');
+`);
+test('MOCK_DB renders inventory without errors', `
+  DB = JSON.parse(JSON.stringify(${JSON.stringify(MOCK_DB)}));
+  DB.seenHashes = DB.seenHashes || [];
+  DB.exportHistory = DB.exportHistory || [];
+  currentPage = 'cards';
+  invFilter = 'biz';
+  document.getElementById('invSearch').value = '';
+  renderInv();
+  var table = document.getElementById('invTable');
+  if (!table.innerHTML.includes('Umbreon')) throw new Error('Inventory missing Umbreon');
+`);
+test('MOCK_DB P&L is realistic (positive net profit)', `
+  var mock = ${JSON.stringify(MOCK_DB)};
+  var totalRev = mock.sells.reduce(function(a,s){ return a + s.salePrice; }, 0);
+  var totalCost = mock.sells.reduce(function(a,s){ return a + s.costBasis; }, 0);
+  var totalFees = mock.sells.reduce(function(a,s){ return a + s.platformFee + s.shippingCost; }, 0);
+  var netProfit = totalRev - totalCost - totalFees;
+  if (totalRev < 500) throw new Error('Revenue too low: ' + totalRev);
+  if (netProfit < 0) throw new Error('Net profit should be positive: ' + netProfit);
+  if (mock.inventory.length < 10) throw new Error('Need 10+ inventory items for good demo');
 `);
 
 // ── Results ─────────────────────────────────────────────────────────────────

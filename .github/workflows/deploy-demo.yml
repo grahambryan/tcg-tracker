@@ -1,0 +1,38 @@
+name: Deploy Demo
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build
+        run: node scripts/build.js
+
+      - name: Prepare demo deploy
+        run: |
+          mkdir -p _demo
+          cp public/demo.html _demo/index.html
+          cp public/manifest.json _demo/manifest.json
+          cp public/sw.js _demo/sw.js
+          cp public/icon-192.svg _demo/icon-192.svg
+          cp public/icon-512.svg _demo/icon-512.svg
+
+      - name: Deploy demo to separate repo
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.DEMO_DEPLOY_KEY }}
+          external_repository: ${{ github.repository_owner }}/tcg-tracker-demo
+          publish_branch: gh-pages
+          publish_dir: ./_demo
+          commit_message: 'deploy demo from ${{ github.sha }}'

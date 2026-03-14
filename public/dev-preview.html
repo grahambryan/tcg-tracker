@@ -113,8 +113,10 @@
 <body>
   <header>
     <strong>TCG Tracker</strong>
+    <span class="badge" id="modeBadge">Demo</span>
     <span class="badge">Desktop</span>
     <span class="badge">iPhone 17 Pro Max</span>
+    <button onclick="togglePreviewMode()" style="background:#333;border:1px solid #555;color:#ccc;border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer" id="modeBtn">Switch to Production</button>
     <span style="margin-left:auto; color:#555; font-size:11px">Hot reload active · browser-sync</span>
   </header>
 
@@ -122,7 +124,7 @@
     <!-- Desktop -->
     <div class="view desktop-view">
       <div class="view-label">Desktop</div>
-      <iframe src="/index.html" id="desktop-frame"></iframe>
+      <iframe src="/demo.html" id="desktop-frame"></iframe>
     </div>
 
     <!-- Mobile -->
@@ -134,7 +136,7 @@
           <div class="camera"></div>
         </div>
         <div class="phone-screen" id="phone-screen">
-          <iframe src="/index.html" id="mobile-frame"></iframe>
+          <iframe src="/demo.html" id="mobile-frame"></iframe>
         </div>
         <div class="phone-home-bar"></div>
       </div>
@@ -167,6 +169,17 @@
 
     scalePhone();
     window.addEventListener('resize', scalePhone);
+
+    // Toggle between demo and production preview
+    let isDemo = true;
+    function togglePreviewMode() {
+      isDemo = !isDemo;
+      const src = isDemo ? '/demo.html' : '/index.html';
+      document.getElementById('desktop-frame').src = src;
+      document.getElementById('mobile-frame').src = src;
+      document.getElementById('modeBadge').textContent = isDemo ? 'Demo' : 'Production';
+      document.getElementById('modeBtn').textContent = isDemo ? 'Switch to Production' : 'Switch to Demo';
+    }
   </script>
 </body>
 </html>
