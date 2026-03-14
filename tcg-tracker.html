@@ -4932,6 +4932,21 @@ function smartImportAll() {
   });
 }
 
+function smartRemoveOne(fileId) {
+  delete _smartFiles[fileId];
+  smartRender();
+  showToast('Removed file', 'ylw');
+}
+
+function smartClearAll() {
+  Object.keys(_smartFiles).forEach(k => delete _smartFiles[k]);
+  smartRender();
+  // Also reset the file input so the same files can be re-dropped
+  const dzInput = document.querySelector('#dz-smart input[type="file"]');
+  if (dzInput) dzInput.value = '';
+  showToast('Cleared all files', 'ylw');
+}
+
 // ── Row state for pending imports ──
 const pendingRows = {}; // id -> {mark, nameOverride, row}
 const nameOverrides = {};
