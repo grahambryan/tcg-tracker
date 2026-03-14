@@ -4220,35 +4220,36 @@ select.field-input{cursor:pointer}
       box-shadow:0 8px 24px rgba(0,0,0,.5);min-width:250px;overflow:hidden">
         <!-- AI toggle row -->
         <div style="padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px">
-          <span style="font-size:18px">🤖</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 014 4v1H8V6a4 4 0 014-4z"/><rect x="3" y="7" width="18" height="14" rx="2"/><circle cx="9" cy="14" r="1.5"/><circle cx="15" cy="14" r="1.5"/></svg>
           <div style="flex:1">
             <div style="font-size:11px;font-weight:700">AI Features</div>
-            <div style="font-size:9px;color:var(--ink3);font-family:var(--mono)" id="aiStatusLabel">uses API credits
-            </div>
+            <div style="font-size:9px;color:var(--ink3);font-family:var(--mono)" id="hdrAiStatus">uses API credits</div>
           </div>
-          <button class="ai-toggle-btn" id="aiToggleBtn" onclick="toggleAI();updateSettingsMenu()"
+          <button class="ai-toggle-btn" id="hdrAiToggle" onclick="toggleAI()"
             style="font-size:11px;font-family:var(--mono);border:1px solid var(--bd);border-radius:20px;padding:4px 10px;background:var(--s2);cursor:pointer;color:var(--ink)">
-            <span id="aiToggleDot2"></span><span id="aiToggleLabel">Off</span>
+            <span id="hdrAiDot"></span><span id="hdrAiLabel">Off</span>
           </button>
         </div>
 
         <!-- API key row (shown when AI is on) -->
-        <div id="apiKeyRow" style="display:none;padding:10px 14px;border-bottom:1px solid var(--bd)">
+        <div id="hdrApiKeyRow" style="display:none;padding:10px 14px;border-bottom:1px solid var(--bd)">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <span style="font-size:14px">🔑</span>
-            <div style="font-size:10px;font-weight:700;color:var(--ink)">Anthropic API Key</div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            <div style="font-size:10px;font-weight:700;color:var(--ink)">API Key</div>
           </div>
           <div style="display:flex;gap:6px">
-            <input id="apiKeyInput" type="password" placeholder="sk-ant-..."
+            <input id="hdrApiKeyInput" type="password" placeholder="sk-ant-..."
               style="flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;
               font-family:var(--mono);font-size:10px;color:var(--ink);min-width:0"
               oninput="saveApiKey(this.value)">
-            <button onclick="var i=document.getElementById('apiKeyInput');i.type=i.type==='password'?'text':'password'"
+            <button onclick="var i=document.getElementById('hdrApiKeyInput');i.type=i.type==='password'?'text':'password'"
               style="background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;
-              cursor:pointer;font-size:12px;color:var(--ink3);flex-shrink:0"
-              title="Show/hide key">👁</button>
+              cursor:pointer;font-size:11px;color:var(--ink3);flex-shrink:0"
+              title="Show/hide key">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
           </div>
-          <div style="font-size:8px;color:var(--ink3);font-family:var(--mono);margin-top:4px">Stored in your browser only. Never sent anywhere except Anthropic.</div>
+          <div style="font-size:8px;color:var(--ink3);font-family:var(--mono);margin-top:4px">Stored locally. Only sent to Anthropic.</div>
         </div>
 
         <!-- Everything moved to More page - settings only has AI toggle -->
@@ -4919,18 +4920,43 @@ select.field-input{cursor:pointer}
           <div class="more-row" style="cursor:default">
             <span class="more-row-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="11" width="18" height="10" rx="2" />
-                <circle cx="12" cy="5" r="2" />
-                <path d="M12 7v4" />
+                <path d="M12 2a4 4 0 014 4v1H8V6a4 4 0 014-4z"/>
+                <rect x="3" y="7" width="18" height="14" rx="2"/>
+                <circle cx="9" cy="14" r="1.5"/><circle cx="15" cy="14" r="1.5"/>
               </svg></span>
             <div class="more-row-body">
               <div class="more-row-title">AI Market Lookup</div>
-              <div class="more-row-sub" id="aiStatusLabel">Uses API credits · searches live prices</div>
+              <div class="more-row-sub" id="moreAiStatus">Uses API credits</div>
             </div>
-            <button class="ai-toggle-btn" id="aiToggleBtn" onclick="toggleAI();updateSettingsMenu()"
+            <button class="ai-toggle-btn" id="moreAiToggle" onclick="toggleAI()"
               style="font-size:11px;font-family:var(--mono);border:1px solid var(--bd);border-radius:20px;padding:6px 14px;background:var(--s2);cursor:pointer;color:var(--ink);flex-shrink:0">
-              <span id="aiToggleDot2"></span><span id="aiToggleLabel">Off</span>
+              <span id="moreAiDot"></span><span id="moreAiLabel">Off</span>
             </button>
+          </div>
+          <!-- API key row in More page -->
+          <div id="moreApiKeyRow" style="display:none;border-top:1px solid var(--bd);padding:10px 14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              <div style="font-size:10px;font-weight:700;color:var(--ink)">API Key</div>
+              <span id="moreKeyStatus" style="font-size:9px;font-family:var(--mono);color:var(--ink3);margin-left:auto"></span>
+            </div>
+            <div style="display:flex;gap:6px">
+              <input id="moreApiKeyInput" type="password" placeholder="sk-ant-..."
+                style="flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;
+                font-family:var(--mono);font-size:10px;color:var(--ink);min-width:0"
+                oninput="saveApiKey(this.value);syncApiKeyUI()">
+              <button onclick="var i=document.getElementById('moreApiKeyInput');i.type=i.type==='password'?'text':'password'"
+                style="background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;
+                cursor:pointer;font-size:11px;color:var(--ink3);flex-shrink:0" title="Show/hide">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+              <button id="moreKeyRemoveBtn" onclick="removeApiKey()"
+                style="display:none;background:var(--s2);border:1px solid rgba(255,68,102,.3);border-radius:8px;padding:4px 8px;
+                cursor:pointer;font-size:11px;color:var(--red);flex-shrink:0" title="Remove key">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+              </button>
+            </div>
+            <div style="font-size:8px;color:var(--ink3);font-family:var(--mono);margin-top:4px">Stored locally. Only sent to Anthropic.</div>
           </div>
           <div id="aiHistoryPanel" style="display:none;border-top:1px solid var(--bd);padding:12px 14px"></div>
         </div>
@@ -5490,19 +5516,53 @@ select.field-input{cursor:pointer}
       updateAIToggleUI();
       updateSettingsMenu();
       showToast(aiEnabled
-        ? '🤖 AI features ON — market intel, live comps & scanner enabled'
-        : '🤖 AI features OFF — no API credits will be used', aiEnabled ? 'grn' : 'ylw');
+        ? 'AI features ON — market intel, live comps & scanner enabled'
+        : 'AI features OFF — no API credits used', aiEnabled ? 'grn' : 'ylw');
     }
+    function removeApiKey() {
+      if (!confirm('Remove your API key?')) return;
+      localStorage.removeItem('tcg_api_key');
+      syncApiKeyUI();
+      showToast('API key removed', 'ylw');
+    }
+
+    function syncApiKeyUI() {
+      const key = getApiKey();
+      const masked = key ? key.slice(0, 7) + '···' + key.slice(-4) : '';
+      // Header dropdown
+      const hdrInput = document.getElementById('hdrApiKeyInput');
+      if (hdrInput && !hdrInput._loaded) { hdrInput.value = key; hdrInput._loaded = true; }
+      // More page
+      const moreInput = document.getElementById('moreApiKeyInput');
+      if (moreInput && document.activeElement !== moreInput) { moreInput.value = key; }
+      const moreStatus = document.getElementById('moreKeyStatus');
+      if (moreStatus) moreStatus.textContent = key ? masked : 'not set';
+      const removeBtn = document.getElementById('moreKeyRemoveBtn');
+      if (removeBtn) removeBtn.style.display = key ? 'flex' : 'none';
+    }
+
     function updateAIToggleUI() {
-      const btn = document.getElementById('aiToggleBtn');
-      const dot = document.getElementById('aiToggleDot');
-      if (!btn) return;
-      btn.style.borderColor = aiEnabled ? 'var(--grn)' : '';
-      btn.style.color = aiEnabled ? 'var(--grn)' : '';
-      if (dot) dot.style.background = aiEnabled ? 'var(--grn)' : 'var(--red)';
-      btn.title = aiEnabled
-        ? 'AI ON (uses API credits) — tap to disable'
-        : 'AI OFF — tap to enable (uses API credits)';
+      // Update all toggle buttons (header + more page)
+      [['hdrAiToggle', 'hdrAiDot', 'hdrAiLabel', 'hdrAiStatus'],
+       ['moreAiToggle', 'moreAiDot', 'moreAiLabel', 'moreAiStatus']].forEach(([btnId, dotId, lblId, statusId]) => {
+        const btn = document.getElementById(btnId);
+        const dot = document.getElementById(dotId);
+        const lbl = document.getElementById(lblId);
+        const status = document.getElementById(statusId);
+        if (lbl) lbl.textContent = aiEnabled ? 'On' : 'Off';
+        if (dot) dot.textContent = aiEnabled ? '● ' : '';
+        if (status) status.textContent = aiEnabled ? 'Enabled — uses API credits' : 'Disabled';
+        if (btn) {
+          btn.style.borderColor = aiEnabled ? 'var(--grn)' : 'var(--bd)';
+          btn.style.color = aiEnabled ? 'var(--grn)' : 'var(--ink)';
+        }
+      });
+      // Show/hide API key rows
+      ['hdrApiKeyRow', 'moreApiKeyRow'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = aiEnabled ? 'block' : 'none';
+      });
+      if (aiEnabled) syncApiKeyUI();
     }
 
     // ── Settings dropdown ─────────────────────────────────────────────────────
@@ -5514,19 +5574,7 @@ select.field-input{cursor:pointer}
       if (!open) updateSettingsMenu();
     }
     function updateSettingsMenu() {
-      const lbl = document.getElementById('aiToggleLabel');
-      const lbl2 = document.getElementById('aiStatusLabel');
-      const btn = document.getElementById('aiToggleBtn');
-      const dot2 = document.getElementById('aiToggleDot2');
-      if (lbl) lbl.textContent = aiEnabled ? 'On' : 'Off';
-      if (dot2) { dot2.textContent = aiEnabled ? '🟢 ' : '🔴 '; }
-      if (lbl2) lbl2.textContent = aiEnabled ? 'enabled — using API credits' : 'disabled';
-      if (btn) { btn.style.borderColor = aiEnabled ? 'var(--grn)' : 'var(--bd)'; btn.style.color = aiEnabled ? 'var(--grn)' : 'var(--ink)'; }
-      // Show/hide API key row
-      const keyRow = document.getElementById('apiKeyRow');
-      const keyInput = document.getElementById('apiKeyInput');
-      if (keyRow) keyRow.style.display = aiEnabled ? 'block' : 'none';
-      if (keyInput && !keyInput._loaded) { keyInput.value = getApiKey(); keyInput._loaded = true; }
+      updateAIToggleUI();
     }
 
     // ── API key storage ─────────────────────────────────────────────────────
@@ -5640,7 +5688,7 @@ select.field-input{cursor:pointer}
         aiEnabled = true;
         localStorage.setItem('tcg_ai_enabled', 'true');
         updateAIToggleUI();
-        showToast('🤖 AI features ON', 'grn');
+        showToast('AI features ON', 'grn');
         return true;
       }
       return false;
@@ -10079,7 +10127,7 @@ select.field-input{cursor:pointer}
       localStorage.setItem('tcg_ai_enabled', 'false');
       updateAIToggleUI();
       updateSettingsMenu();
-      showToast('🤖 AI auto-disabled to prevent accidental costs. Re-enable in Settings.', 'ylw');
+      showToast('AI auto-disabled to prevent accidental costs. Re-enable in Settings.', 'ylw');
     }
 
     function buildMktProgressHTML(batchIdx, totalBatches, cardNames, skipped, updated, failed) {
