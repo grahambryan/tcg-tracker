@@ -14,7 +14,9 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+    integrity="sha512-ycEyPYnMJlBGPC9nGIlFVhJbVIGo2pQm5v5e4FhYlOjb0MBfBo4JCOaM0NbLbeN0Dl/pkcuf0wgpl/7grhpfQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     /* ══════════════════════════════════════════════════
    TCG TRACKER — Collector / Pokémon TCG App Theme
@@ -4585,8 +4587,6 @@ select.field-input{cursor:pointer}
               style="padding:6px 10px;font-size:9px">Other</button>
             <button class="filter-btn" id="sellsFilterNoCost" onclick="setSellsFilter('nocost',this)"
               style="padding:6px 8px;font-size:9px;color:var(--ylw)">⚠</button>
-            <button class="filter-btn" id="sellsFilterMatch" onclick="setSellsFilter('match',this)"
-              style="padding:6px 8px;font-size:9px;color:var(--acc)">⟷</button>
             <button class="filter-btn" id="sellsFilterDupes" onclick="setSellsFilter('dupes',this)"
               style="padding:6px 8px;font-size:9px;color:var(--red)">⊗</button>
             <button class="filter-btn" id="sellsFilterEdited" onclick="setSellsFilter('edited',this)"
@@ -4856,6 +4856,34 @@ select.field-input{cursor:pointer}
             </div>
             <span class="more-row-chev">›</span>
           </button>
+        </div>
+
+        <!-- ══ FILL COSTS ══ -->
+        <div
+          style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px">
+          <button onclick="toggleMoreSection('moreFillCostsBody','moreFillCostsChev')"
+            style="display:flex;align-items:center;width:100%;padding:14px 16px;background:none;border:none;cursor:pointer;text-align:left;gap:12px">
+            <span
+              style="width:36px;height:36px;background:var(--acc2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:600;color:var(--ink)">Fill Costs</div>
+              <div style="font-size:11px;color:var(--ink3)">Estimate missing cost basis on sells</div>
+            </div>
+            <svg id="moreFillCostsChev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              style="color:var(--ink3);transition:transform .2s;flex-shrink:0">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <div id="moreFillCostsBody" style="display:none;border-top:1px solid var(--bd);padding:14px 16px">
+            <div id="fillCostsPanel"></div>
+          </div>
         </div>
 
         <!-- ══ THEME ══ -->
@@ -5312,7 +5340,7 @@ select.field-input{cursor:pointer}
         <rect x="2" y="4" width="20" height="16" rx="2.5" />
         <path d="M7 9h10M7 13h6" />
       </svg>
-      <span>Cards</span>
+      <span>Inventory</span>
     </button>
     <button class="nav-item" onclick="goPage('activity',this)" data-page="activity">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
@@ -5730,6 +5758,7 @@ select.field-input{cursor:pointer}
     function fmtMoney(n) { const v = parseFloat(n) || 0; return (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2); }
     function fmtMoneyShort(n) { const v = parseFloat(n) || 0; const a = Math.abs(v); const s = v < 0 ? '-' : ''; return s + '$' + (a >= 1000 ? (a / 1000).toFixed(1) + 'k' : a.toFixed(0)); }
     function cn(s) { return parseFloat(String(s || 0).replace(/[$,]/g, '')) || 0; }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     // Cost basis under $0.50 is treated as "no real cost" (avoids penny-entry artifacts)
     function hasMeaningfulCost(costBasis) { const c = cn(costBasis); return c >= 0.50; }
     function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -5842,7 +5871,7 @@ select.field-input{cursor:pointer}
     function buildDesktopNav() {
       const items = [
         { id: 'dash', icon: '◈', label: 'Portfolio' },
-        { id: 'cards', icon: '▦', label: 'Cards' },
+        { id: 'cards', icon: '▦', label: 'Inventory' },
         { id: 'activity', icon: '↕', label: 'Activity' },
         { id: 'more', icon: '···', label: 'More' }
       ];
@@ -6067,6 +6096,9 @@ select.field-input{cursor:pointer}
         }
       }
 
+      // Render fill costs panel
+      renderFillCosts();
+
       // Sync collapsible theme label
       const curTheme = localStorage.getItem('tcg_theme') || 'nightowl';
       const t = THEMES[curTheme];
@@ -6076,6 +6108,84 @@ select.field-input{cursor:pointer}
         if (emoji) emoji.textContent = t.emoji;
         if (name) name.textContent = t.name;
       }
+    }
+
+    function renderFillCosts() {
+      const panel = document.getElementById('fillCostsPanel');
+      if (!panel) return;
+
+      const isWnEarnings = s => !!(s.wnOrderId);
+      const allBiz = DB.sells.filter(s => !s.isPersonal && !s._dupeVoided);
+      const zeroCost = allBiz.filter(s => isWnEarnings(s) && cn(s.costBasis) <= 0);
+      const withCost = allBiz.filter(s => cn(s.costBasis) > 0 && cn(s.salePrice) > 0);
+      const totalRev = allBiz.reduce((a, s) => a + cn(s.salePrice), 0);
+      const totalCogs = allBiz.reduce((a, s) => a + cn(s.costBasis), 0);
+      const totalFees = allBiz.reduce((a, s) => a + cn(s.platformFee) + cn(s.shippingCost) + cn(s.platformProcessingFee || 0), 0);
+      const knownProfit = totalRev - totalCogs - totalFees;
+      const _currentFill = DB.settings?.fillPct ?? 45;
+      const _fillMode = DB.settings?.fillMode ?? 'percentage'; // 'percentage' | 'netzero' | 'profit-balance'
+
+      // Average cost % from sells with known cost
+      const _avgCostPct = withCost.length
+        ? (withCost.reduce((a, s) => a + cn(s.costBasis) / cn(s.salePrice), 0) / withCost.length * 100).toFixed(1)
+        : null;
+
+      // Compute unaccounted profit (revenue from $0-cost sells minus fees)
+      const zeroCostRev = zeroCost.reduce((a, s) => a + cn(s.salePrice), 0);
+      const zeroCostFees = zeroCost.reduce((a, s) => a + cn(s.platformFee) + cn(s.shippingCost) + cn(s.platformProcessingFee || 0), 0);
+
+      if (!zeroCost.length) {
+        panel.innerHTML = '<div style="font-size:12px;color:var(--grn);font-family:var(--mono)">All sells have cost basis filled in.</div>';
+        return;
+      }
+
+      panel.innerHTML = `
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px">${zeroCost.length} sells missing cost basis</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;font-family:var(--mono);color:var(--ink3);margin-bottom:12px">
+          <span>Revenue: <span style="color:var(--grn)">${fmtMoney(zeroCostRev)}</span></span>
+          <span>Fees: <span style="color:var(--red)">${fmtMoney(zeroCostFees)}</span></span>
+        </div>
+
+        <div style="font-size:10px;font-family:var(--mono);color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">FILL MODE</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--ink)">
+            <input type="radio" name="fillMode" value="percentage" ${_fillMode === 'percentage' ? 'checked' : ''}
+              onchange="DB.settings.fillMode='percentage';save();renderFillCosts()">
+            <div><strong>Percentage of sale</strong>
+              <div style="font-size:10px;color:var(--ink3)">Cost = X% of sale price${_avgCostPct ? ' (your avg: ' + _avgCostPct + '%)' : ''}</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--ink)">
+            <input type="radio" name="fillMode" value="netzero" ${_fillMode === 'netzero' ? 'checked' : ''}
+              onchange="DB.settings.fillMode='netzero';save();renderFillCosts()">
+            <div><strong>Net zero (break even)</strong>
+              <div style="font-size:10px;color:var(--ink3)">Assumes no gain — cost = sale price minus fees</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--ink)">
+            <input type="radio" name="fillMode" value="profit-balance" ${_fillMode === 'profit-balance' ? 'checked' : ''}
+              onchange="DB.settings.fillMode='profit-balance';save();renderFillCosts()">
+            <div><strong>Balance the books</strong>
+              <div style="font-size:10px;color:var(--ink3)">Distribute known profit (${fmtMoney(knownProfit)}) proportionally across unfilled sells</div>
+            </div>
+          </label>
+        </div>
+
+        ${_fillMode === 'percentage' ? `
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <label style="font-size:11px;color:var(--ink2)">Fill %:</label>
+          <input id="fillPctInputMore" type="number" min="1" max="99" step="0.5" value="${_currentFill}"
+            style="width:64px;background:var(--s2);border:1px solid var(--bd);border-radius:6px;color:var(--ink1);padding:4px 8px;font-size:13px;font-family:var(--mono);text-align:center"
+            oninput="DB.settings.fillPct=parseFloat(this.value)||45;save()">
+          ${_avgCostPct ? `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('fillPctInputMore').value='${_avgCostPct}';DB.settings.fillPct=${_avgCostPct};save();showToast('Fill % set to ${_avgCostPct}%','grn')">Use my avg (${_avgCostPct}%)</button>` : ''}
+        </div>` : ''}
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-acc btn-sm" onclick="autoFillCostsWithMode()">Fill ${zeroCost.length} sells</button>
+          <button class="btn btn-ghost btn-sm" onclick="autoFillCostsWithMode(true)">Fill ≤$150 only</button>
+        </div>
+        <div style="font-size:9px;color:var(--ink3);margin-top:6px">Cards over $150 with no match are flagged for manual entry in percentage mode.</div>
+      `;
     }
 
     // ── Docs accordion ───────────────────────────────────
@@ -6484,7 +6594,7 @@ select.field-input{cursor:pointer}
           const gap = mkt - (target || 0);
           return '<div class="db-sell-row">'
             + '<div style="flex:1;min-width:0">'
-            + '<div class="db-sell-name">' + i.cardName + '</div>'
+            + '<div class="db-sell-name">' + esc(i.cardName) + '</div>'
             + '<div class="db-sell-meta">' + gameChip(i.game) + '&nbsp; mkt ' + fmtMoney(mkt) + '</div>'
             + '</div>'
             + '<div class="db-sell-right">'
@@ -6711,35 +6821,35 @@ select.field-input{cursor:pointer}
         }
       });
 
-      setInvTable(`<div class="tbl-wrap"><table>
-    <thead><tr>
-      <th style="width:44px"></th><th>Card</th><th>Set · #</th><th>Game</th><th>Qty</th><th>Grading</th><th>Cost</th><th>Mkt Val</th><th>Gain</th>
-    </tr></thead>
-    <tbody>${sorted.map(i => {
+      setInvTable(`<div class="inv-cards">${sorted.map(i => {
         const gain = (cn(i.marketValue) - cn(i.costBasis)) * cn(i.qty || 1);
         const cachedImg = ((DB.marketCache || {})[i.id] || {}).imageUrl;
         const placeholder = placeholderImg(i.cardName, i.game);
         const imgSrc = cachedImg || placeholder;
         const imgOpacity = cachedImg ? '1' : '0.5';
-        return `<tr>
-        <td style="padding:4px 6px 4px 10px;vertical-align:middle">
-          <img id="iimg-${i.id}" src="${imgSrc}" alt=""
-            style="width:34px;height:47px;border-radius:3px;object-fit:cover;opacity:${imgOpacity};transition:opacity .3s;border:1px solid var(--bd);display:block">
-        </td>
-        <td style="min-width:130px">
-          ${i.isPersonal ? '<span class="bdg bdg-ylw" style="font-size:7px">P</span> ' : ''}
-          <span class="trunc" style="max-width:140px;font-size:11px;color:var(--blu)">${i.cardName || '—'}</span>
-        </td>
-        <td style="font-size:10px;color:var(--ink3)">${[i.setName, i.cardNumber].filter(Boolean).join(' · ') || '—'}</td>
-        <td>${gameChip(i.game)}</td>
-        <td class="mono" style="color:var(--ink2)">${i.qty || 1}</td>
-        <td>${gradeBadge(i)}</td>
-        <td class="mono">${fmtMoney(cn(i.costBasis) * cn(i.qty || 1))}</td>
-        <td class="mono b">${fmtMoney(cn(i.marketValue) * cn(i.qty || 1))}</td>
-        <td class="mono ${gain >= 0 ? 'g' : 'r'}">${fmtMoney(gain)}</td>
-      </tr>`;
-      }).join('')}</tbody>
-  </table></div>`);
+        const setInfo = [i.setName, i.cardNumber].filter(Boolean).join(' · ');
+        return `<div class="inv-card" style="display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bd)">
+        <img id="iimg-${i.id}" src="${imgSrc}" alt=""
+          style="width:42px;height:58px;border-radius:4px;object-fit:cover;opacity:${imgOpacity};transition:opacity .3s;border:1px solid var(--bd);flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            ${i.isPersonal ? '<span class="bdg bdg-ylw" style="font-size:7px">P</span>' : ''}
+            <span style="font-size:12px;font-weight:600;color:var(--blu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(i.cardName) || '—'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+            ${gameChip(i.game)}
+            ${setInfo ? `<span style="font-size:9px;color:var(--ink3)">${setInfo}</span>` : ''}
+            ${gradeBadge(i)}
+            ${cn(i.qty || 1) > 1 ? `<span style="font-size:9px;font-family:var(--mono);color:var(--ink2)">x${i.qty}</span>` : ''}
+          </div>
+          <div style="display:flex;gap:12px;font-size:11px;font-family:var(--mono)">
+            <span style="color:var(--ink3)">Cost <span style="color:var(--ink2)">${fmtMoney(cn(i.costBasis) * cn(i.qty || 1))}</span></span>
+            <span style="color:var(--ink3)">Mkt <span style="color:var(--blu)">${fmtMoney(cn(i.marketValue) * cn(i.qty || 1))}</span></span>
+            <span class="${gain >= 0 ? 'g' : 'r'}">${gain >= 0 ? '+' : ''}${fmtMoney(gain)}</span>
+          </div>
+        </div>
+      </div>`;
+      }).join('')}</div>`);
     }
 
     function gradeBadge(item) {
@@ -6982,7 +7092,7 @@ select.field-input{cursor:pointer}
               </td>
               <td class="mono" style="font-size:9px;white-space:nowrap">${fmtDate(b.date)}</td>
               <td style="font-size:10px;max-width:140px">
-                <div class="trunc">${b.cardName || '<em style="color:var(--ink3)">no name</em>'}</div>
+                <div class="trunc">${b.cardName ? esc(b.cardName) : '<em style="color:var(--ink3)">no name</em>'}</div>
               </td>
               <td style="font-size:9px"><span class="bdg ${b.source === 'Whatnot' ? 'bdg-prp' : 'bdg-muted'}">${b.source || '?'}</span></td>
               <td style="font-size:9px;color:var(--ink3)">${b.seller || '—'}</td>
@@ -7216,7 +7326,7 @@ select.field-input{cursor:pointer}
       // Alerts row (only show if there are actionable items)
       const alerts = [];
       if (noCost) alerts.push('<span style="cursor:pointer;color:var(--ylw)" onclick="setSellsFilter(\'nocost\',document.getElementById(\'sellsFilterNoCost\'))">' + noCost + ' no cost</span>');
-      if (needsName) alerts.push('<span style="cursor:pointer;color:var(--acc)" onclick="setSellsFilter(\'match\',document.getElementById(\'sellsFilterMatch\'))">' + needsName + ' need names</span>');
+      if (needsName) alerts.push('<span style="cursor:pointer;color:var(--acc)" onclick="navTo(\'more\');setTimeout(function(){toggleMoreSection(\'moreFillCostsBody\',\'moreFillCostsChev\')},100)">' + needsName + ' need names</span>');
       if (_dupLen) alerts.push('<span style="cursor:pointer;color:var(--red)" onclick="setSellsFilter(\'dupes\',document.getElementById(\'sellsFilterDupes\'))">' + _dupLen + ' dupes</span>');
       const alertRow = alerts.length
         ? '<div style="display:flex;gap:10px;font-size:9px;font-family:var(--mono);padding:6px 0 2px">' + alerts.join('<span style="color:var(--bd2)">·</span>') + '</div>'
@@ -7244,9 +7354,12 @@ select.field-input{cursor:pointer}
         </div>
       </div>
     </div>`;
-      // ── MATCH MODE ──────────────────────────────────────────────────────────────
+      // ── MATCH MODE (moved to More > Fill Costs) ─────────────────────────────────
       if (sellsFilter === 'match') {
-        renderMatchMode(bizItems, isWnEarnings);
+        // Redirect to More page Fill Costs section
+        sellsFilter = 'all';
+        navTo('more');
+        setTimeout(function(){ toggleMoreSection('moreFillCostsBody','moreFillCostsChev'); }, 100);
         return;
       }
       if (sellsFilter === 'dupes') {
@@ -7295,9 +7408,9 @@ select.field-input{cursor:pointer}
         <td style="max-width:150px">
           <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
             <span class="bdg" style="font-size:7px;background:var(--s2);color:var(--ink3);border:1px solid var(--bd)">⊘ VOIDED</span>
-            <span class="trunc" style="font-size:11px;max-width:120px;text-decoration:line-through">${s.cardName || s.wnSlot || '—'}</span>
+            <span class="trunc" style="font-size:11px;max-width:120px;text-decoration:line-through">${esc(s.cardName || s.wnSlot) || '—'}</span>
           </div>
-          <div style="font-size:8px;color:var(--ink3);margin-top:2px">Voided ${s._dupeVoidedAt || ''} · kept: ${keptRecord ? (keptRecord.cardName || keptRecord.wnSlot || keptRecord.id) : s._dupeKeptId}</div>
+          <div style="font-size:8px;color:var(--ink3);margin-top:2px">Voided ${esc(s._dupeVoidedAt) || ''} · kept: ${keptRecord ? esc(keptRecord.cardName || keptRecord.wnSlot || keptRecord.id) : esc(s._dupeKeptId)}</div>
         </td>
         <td>${gameChip(s.game)}</td>
         <td><span class="bdg bdg-muted" style="font-size:7px">${(s.platform || '?').slice(0, 3).toUpperCase()}</span></td>
@@ -7340,7 +7453,7 @@ select.field-input{cursor:pointer}
           ${s.isPersonal ? '<span class="bdg bdg-ylw" style="font-size:7px">P</span>' : ''}
           <span id="sell-badge-${s.id}" class="bdg" style="font-size:7px;background:var(--ylw3);color:var(--ylw);border:1px solid rgba(255,214,10,.3);${needsAttn ? '' : 'display:none'}">⚠</span>
           ${matchedBadge}
-          <span class="trunc" style="font-size:11px;max-width:120px">${noName ? `<em style="color:var(--ink3)">${s.cardName || 'unnamed'}</em>` : s.cardName}</span>
+          <span class="trunc" style="font-size:11px;max-width:120px">${noName ? `<em style="color:var(--ink3)">${esc(s.cardName) || 'unnamed'}</em>` : esc(s.cardName)}</span>
           ${s._edited ? '<span style="font-size:7px;color:var(--blu);border:1px solid rgba(79,195,247,.3);border-radius:3px;padding:0 3px;font-family:var(--mono)">edited</span>' : ''}
         </div>
         ${sub}
@@ -7408,7 +7521,7 @@ select.field-input{cursor:pointer}
         </div>` : ''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-ghost btn-sm" onclick="toggleSellEdit('${s.id}')">Done</button>
-          ${isWnE && (!s.cardName || /^Card On Screen/i.test(s.cardName) || s.cardName === 'Whatnot Sale') ? `<button class="btn btn-ghost btn-sm" style="color:var(--acc);border-color:rgba(255,107,53,.3)" onclick="setSellsFilter('match',document.getElementById('sellsFilterMatch'))">⟷ Fill names</button>` : ''}
+          ${isWnE && (!s.cardName || /^Card On Screen/i.test(s.cardName) || s.cardName === 'Whatnot Sale') ? `<button class="btn btn-ghost btn-sm" style="color:var(--acc);border-color:rgba(255,107,53,.3)" onclick="navTo('more');setTimeout(function(){toggleMoreSection('moreFillCostsBody','moreFillCostsChev')},100)">Fill costs</button>` : ''}
           <button class="btn btn-ghost btn-sm danger" onclick="deleteItem('sells','${s.id}')">Delete</button>
         </div>
       </td>
@@ -7644,8 +7757,16 @@ select.field-input{cursor:pointer}
         keepSell._edited = true;
         keepSell._editedAt = todayStr();
       }
-      // Append voided row's name to keeper's notes
+      // Transfer card name from voided (Collector) to keeper (Whatnot) if keeper lacks a real name
       const voidName = voidSell.cardName || voidSell.wnSlot || '';
+      const keepName = keepSell.cardName || '';
+      const isGenericName = !keepName || /^Card On Screen/i.test(keepName) || keepName === 'Whatnot Sale' || /^Slot \d/i.test(keepName);
+      if (voidName && isGenericName) {
+        keepSell.cardName = voidName;
+        keepSell._edited = true;
+        keepSell._editedAt = todayStr();
+      }
+      // Also append voided row's name to keeper's notes for audit trail
       if (voidName) {
         const noteTag = `[voided dupe: ${voidName}]`;
         keepSell.notes = [keepSell.notes, noteTag].filter(Boolean).join(' ');
@@ -7781,6 +7902,76 @@ select.field-input{cursor:pointer}
       save();
       showToast(`Filled ${filled} of ${targets.length} rows`, 'grn');
       renderSells();
+    }
+
+    // Fill costs using selected mode from More page
+    function autoFillCostsWithMode(onlyLowValue = false) {
+      const mode = DB.settings?.fillMode ?? 'percentage';
+      const isWnEarnings = s => !!(s.wnOrderId);
+      const targets = DB.sells.filter(s => isWnEarnings(s) && cn(s.costBasis) <= 0 && !s.isPersonal && !s._dupeVoided);
+      if (!targets.length) { showToast('No $0-cost WN rows found', 'ylw'); return; }
+
+      let filled = 0;
+      if (mode === 'netzero') {
+        // Net zero: cost = sale price - fees (break even)
+        targets.forEach(s => {
+          if (onlyLowValue && cn(s.salePrice) > 150) return;
+          const fees = cn(s.platformFee) + cn(s.shippingCost) + cn(s.platformProcessingFee || 0);
+          s.costBasis = Math.max(0, cn(s.salePrice) - fees);
+          s.netProfit = 0;
+          s._costEstimated = true;
+          s._costSource = 'net-zero (break even)';
+          s._costConfidence = 'low';
+          s._edited = true;
+          s._editedAt = todayStr();
+          filled++;
+        });
+      } else if (mode === 'profit-balance') {
+        // Distribute known profit margin proportionally
+        const allBiz = DB.sells.filter(s => !s.isPersonal && !s._dupeVoided);
+        const withCost = allBiz.filter(s => cn(s.costBasis) > 0 && cn(s.salePrice) > 0);
+        // Compute average profit margin from known sells
+        const avgMargin = withCost.length
+          ? withCost.reduce((a, s) => {
+              const fees = cn(s.platformFee) + cn(s.shippingCost) + cn(s.platformProcessingFee || 0);
+              return a + (cn(s.salePrice) - cn(s.costBasis) - fees) / cn(s.salePrice);
+            }, 0) / withCost.length
+          : 0;
+        targets.forEach(s => {
+          if (onlyLowValue && cn(s.salePrice) > 150) return;
+          const fees = cn(s.platformFee) + cn(s.shippingCost) + cn(s.platformProcessingFee || 0);
+          // cost = sale - fees - (sale * avgMargin) => preserves the same margin
+          const estCost = Math.max(0, cn(s.salePrice) - fees - cn(s.salePrice) * avgMargin);
+          s.costBasis = +estCost.toFixed(2);
+          s.netProfit = cn(s.salePrice) - s.costBasis - fees;
+          s._costEstimated = true;
+          s._costSource = `profit-balanced (${(avgMargin * 100).toFixed(1)}% margin)`;
+          s._costConfidence = withCost.length >= 5 ? 'medium' : 'low';
+          s._edited = true;
+          s._editedAt = todayStr();
+          filled++;
+        });
+      } else {
+        // Default percentage mode — use existing engine
+        targets.forEach(s => {
+          const est = estimateCostBasis(s);
+          if (onlyLowValue && cn(s.salePrice) > 150) return;
+          if (est.cost > 0) {
+            s.costBasis = est.cost;
+            s.netProfit = cn(s.salePrice) - est.cost - cn(s.platformFee) - cn(s.platformProcessingFee || 0) - cn(s.shippingCost);
+            s._costEstimated = true;
+            s._costSource = est.source;
+            s._costConfidence = est.confidence;
+            s._edited = true;
+            s._editedAt = todayStr();
+            filled++;
+          }
+        });
+      }
+
+      save();
+      showToast(`Filled ${filled} of ${targets.length} rows (${mode})`, 'grn');
+      renderFillCosts();
     }
 
     function renderMatchMode(bizItems, isWnEarnings) {
@@ -8398,7 +8589,8 @@ select.field-input{cursor:pointer}
       // Count new rows across importable files
       const totalNew = importable.reduce((a, id) => {
         const s = _smartFiles[id].stats;
-        return a + (s.new !== undefined ? s.new : s.rows || 0);
+        const n = s.newOrders ?? s.newSales ?? s.buyRows ?? s.uniqueCards ?? s.rows ?? 0;
+        return a + n;
       }, 0);
 
       let html = '<div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
@@ -8436,6 +8628,7 @@ select.field-input{cursor:pointer}
 
       // Route to the correct renderer + commit
       try {
+        const needsReview = f.type === 'csells-col';
         const dispatchRender = {
           wn: () => { renderWnImport(f.rows); commitImport('wn'); },
           wne: () => { renderWnEarningsImport(f.rows); commitImport('wne'); },
@@ -8444,13 +8637,17 @@ select.field-input{cursor:pointer}
           bank: () => { renderBankImport(f.rows); commitImport('bank'); },
         };
         if (dispatchRender[f.type]) dispatchRender[f.type]();
-        // Mark card as done
+        // Mark card status
         const card = document.getElementById('scard-' + fileId);
         if (card) {
-          card.style.opacity = '.5';
-          if (btn) { btn.textContent = '✓ Done'; btn.style.background = 'var(--grn)'; }
+          if (needsReview) {
+            if (btn) { btn.textContent = '⏳ Review below'; btn.style.background = 'var(--ylw)'; btn.style.color = '#000'; }
+          } else {
+            card.style.opacity = '.5';
+            if (btn) { btn.textContent = '✓ Done'; btn.style.background = 'var(--grn)'; }
+          }
         }
-        showToast('✓ Imported ' + f.name, 'grn');
+        showToast(needsReview ? '📋 ' + f.name + ' ready for review below' : '✓ Imported ' + f.name, needsReview ? 'ylw' : 'grn');
       } catch (e) {
         if (btn) { btn.textContent = '✗ Error'; btn.style.background = 'var(--red)'; btn.disabled = false; }
         showToast('Import failed: ' + e.message, 'red');
@@ -8461,17 +8658,24 @@ select.field-input{cursor:pointer}
       const ids = Object.keys(_smartFiles).filter(id => _smartFiles[id].type !== 'unknown');
       // Import sequentially, skip csells-col (needs manual review)
       let count = 0;
+      const csellsIds = [];
       ids.forEach(id => {
         const f = _smartFiles[id];
-        if (f.type === 'csells-col') return; // needs user review of matches
+        if (f.type === 'csells-col') { csellsIds.push(id); return; } // needs user review of matches
         smartImportOne(id);
         count++;
       });
       // Handle csells-col separately — just render for review
-      ids.filter(id => _smartFiles[id].type === 'csells-col').forEach(id => {
-        renderCSellsImport(_smartFiles[id].rows);
-        showToast('📋 Collector sales ready for review below', 'ylw');
+      csellsIds.forEach(id => {
+        smartImportOne(id); // will show "Review below" status instead of "Done"
       });
+      // Clear fully-imported files from the list (keep csells-col since they need review)
+      ids.forEach(id => {
+        if (_smartFiles[id] && _smartFiles[id].type !== 'csells-col') {
+          delete _smartFiles[id];
+        }
+      });
+      smartRender();
     }
 
     function smartRemoveOne(fileId) {

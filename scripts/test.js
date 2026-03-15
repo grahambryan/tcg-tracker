@@ -972,6 +972,74 @@ test('MOCK_DB P&L is realistic (positive net profit)', `
   if (mock.inventory.length < 10) throw new Error('Need 10+ inventory items for good demo');
 `);
 
+// ── New features tests ─────────────────────────────────────────────────────
+suite('Security & XSS');
+test('esc: global HTML escape function exists', `
+  if (typeof esc !== 'function') throw new Error('esc not defined');
+  var result = esc('<script>alert(1)</script>');
+  if (result.includes('<script>')) throw new Error('esc did not escape script tag');
+  if (!result.includes('&lt;script&gt;')) throw new Error('esc output wrong: ' + result);
+`);
+test('esc: escapes quotes', `
+  var result = esc('a"b');
+  if (result.includes('"')) throw new Error('esc did not escape double quote');
+`);
+
+suite('Import fixes');
+test('smartStats new count: wn uses newOrders', `
+  var rows = [
+    { 'order id': '1', 'order status': 'completed', 'order style': '', 'product description': 'Card A', 'hammer price': '10', 'shipping charged to buyer': '2', 'seller username': 'bob', 'order date': '2024-01-01' },
+    { 'order id': '2', 'order status': 'completed', 'order style': '', 'product description': 'Card B', 'hammer price': '20', 'shipping charged to buyer': '3', 'seller username': 'alice', 'order date': '2024-01-02' },
+  ];
+  var stats = smartStats('wn', rows);
+  if (stats.newOrders === undefined) throw new Error('smartStats wn missing newOrders');
+  if (typeof stats.newOrders !== 'number') throw new Error('newOrders not a number');
+`);
+test('totalNew calc uses correct property names', `
+  var testFiles = {
+    f1: { type: 'wn', stats: { newOrders: 5 } },
+    f2: { type: 'wne', stats: { newSales: 3 } },
+    f3: { type: 'csells-col', stats: { newSales: 2 } },
+  };
+  var importable = Object.keys(testFiles);
+  var totalNew = importable.reduce(function(a, id) {
+    var s = testFiles[id].stats;
+    var n = s.newOrders != null ? s.newOrders : s.newSales != null ? s.newSales : s.buyRows != null ? s.buyRows : s.uniqueCards != null ? s.uniqueCards : s.rows || 0;
+    return a + n;
+  }, 0);
+  if (totalNew !== 10) throw new Error('Expected 10, got ' + totalNew);
+`);
+
+suite('Duplicate sell merge');
+test('mergeDupeAndVoid: transfers card name to generic keeper', `
+  var keeper = { id: 'k1', cardName: 'Whatnot Sale', salePrice: 50, costBasis: 0, platformFee: 5, shippingCost: 3, platformProcessingFee: 0, notes: '' };
+  var voided = { id: 'v1', cardName: 'Charizard VMAX', salePrice: 50, costBasis: 20, platformFee: 5, shippingCost: 3, platformProcessingFee: 0 };
+  mergeDupeAndVoid(keeper, voided);
+  if (keeper.cardName !== 'Charizard VMAX') throw new Error('Card name not transferred: ' + keeper.cardName);
+  if (keeper.costBasis !== 20) throw new Error('Cost not transferred');
+  if (!voided._dupeVoided) throw new Error('Voided flag not set');
+`);
+test('mergeDupeAndVoid: keeps specific name on keeper', `
+  var keeper = { id: 'k2', cardName: 'Pikachu V', salePrice: 30, costBasis: 10, platformFee: 3, shippingCost: 2, platformProcessingFee: 0, notes: '' };
+  var voided = { id: 'v2', cardName: 'Pikachu V Alt Art', salePrice: 30, costBasis: 15, platformFee: 3, shippingCost: 2, platformProcessingFee: 0 };
+  mergeDupeAndVoid(keeper, voided);
+  if (keeper.cardName !== 'Pikachu V') throw new Error('Should not overwrite specific name: ' + keeper.cardName);
+`);
+
+suite('Fill costs modes');
+test('autoFillCostsWithMode: function exists', `
+  if (typeof autoFillCostsWithMode !== 'function') throw new Error('autoFillCostsWithMode not defined');
+`);
+test('renderFillCosts: function exists', `
+  if (typeof renderFillCosts !== 'function') throw new Error('renderFillCosts not defined');
+`);
+
+suite('Inventory tab rename');
+test('nav label says Inventory not Cards', `
+  var navHtml = document.getElementById('mobileNav').innerHTML;
+  if (navHtml.includes('>Cards<')) throw new Error('Nav still says Cards');
+`);
+
 // ── Results ─────────────────────────────────────────────────────────────────
 // Wait for all async tests to settle
 setImmediate(async () => {
