@@ -414,11 +414,12 @@
     }
 
     html {
-      /* nav color bleeds into safe-area below bottom nav on notched iPhones */
+      /* Fills entire screen including safe area on iOS PWA standalone mode */
+      height: 100%;
       background: var(--s0);
+      overflow: hidden;
     }
 
-    html,
     body {
       height: 100dvh;
       overflow: hidden
@@ -5023,7 +5024,7 @@ select.field-input{cursor:pointer}
 
         <div style="text-align:center;padding:4px 0 10px;font-size:9px;color:var(--ink3);font-family:var(--mono)">
           TCG.tracker · all data stays on your device
-          <div style="margin-top:2px" id="buildStamp">Last updated: 1773784583516</div>
+          <div style="margin-top:2px" id="buildStamp">Last updated: 1773785024104</div>
         </div>
       </div>
 

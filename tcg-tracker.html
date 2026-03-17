@@ -414,11 +414,12 @@
     }
 
     html {
-      /* nav color bleeds into safe-area below bottom nav on notched iPhones */
+      /* Fills entire screen including safe area on iOS PWA standalone mode */
+      height: 100%;
       background: var(--s0);
+      overflow: hidden;
     }
 
-    html,
     body {
       height: 100dvh;
       overflow: hidden
