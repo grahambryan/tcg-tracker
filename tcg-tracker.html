@@ -11917,6 +11917,7 @@ select.field-input{cursor:pointer}
       if (isNaN(d.getTime())) return;
       var formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      el.setAttribute('data-build', m[1]);
       el.textContent = 'Last updated: ' + formatted;
     })();
 
@@ -12017,13 +12018,17 @@ select.field-input{cursor:pointer}
         // Fetch the latest HTML to compare build timestamps
         var res = await fetch(location.href, { cache: 'no-store' });
         var newHtml = await res.text();
-        var currentTs = (document.getElementById('buildStamp') || {}).textContent || '';
-        var match = newHtml.match(/id="buildStamp"[^>]*>([^<]*)/);
-        var remoteTs = match ? match[1] : '';
 
-        // Compare — if both contain the same epoch, no update
-        var currentEpoch = (currentTs.match(/\d{10,}/) || [''])[0];
-        var remoteEpoch = (remoteTs.match(/\d{10,}/) || [''])[0];
+        // Current build epoch stored in data-build attribute (set by formatter on load)
+        var stampEl = document.getElementById('buildStamp');
+        var currentEpoch = (stampEl && stampEl.getAttribute('data-build')) || '';
+        // If formatter hasn't run yet, try the raw text
+        if (!currentEpoch) currentEpoch = ((stampEl || {}).textContent || '').match(/\d{10,}/)?.[0] || '';
+
+        // Remote epoch from the raw HTML (before formatter runs)
+        var remoteMatch = newHtml.match(/id="buildStamp"[^>]*>[^<]*?(\d{10,})/);
+        var remoteEpoch = remoteMatch ? remoteMatch[1] : '';
+
         var hasUpdate = !currentEpoch || !remoteEpoch || currentEpoch !== remoteEpoch;
 
         if (!hasUpdate) {
