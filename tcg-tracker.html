@@ -5007,7 +5007,9 @@ select.field-input{cursor:pointer}
         </div>
 
         <div style="text-align:center;padding:4px 0 10px;font-size:9px;color:var(--ink3);font-family:var(--mono)">
-          TCG.tracker · all data stays on your device</div>
+          TCG.tracker · all data stays on your device
+          <div style="margin-top:2px">Last updated: __BUILD_DATE__</div>
+        </div>
       </div>
 
 
@@ -10640,12 +10642,23 @@ select.field-input{cursor:pointer}
       if (item._trade) {
         // Default trade qty to full qty
         item._tradeQty = cn(item.qty) || 1;
+        delete item._tradeVoided; // clear void when re-adding
       } else {
         delete item._tradeQty;
+        delete item._tradeVoided;
       }
       save();
       renderMktSignals(window._mktSigFilter || 'all');
-      showToast(item._trade ? `🔄 Added ${item.cardName} to trade pile` : `Removed from trade pile`, item._trade ? 'grn' : 'ylw');
+      showToast(item._trade ? 'Added ' + esc(item.cardName) + ' to trade pile' : 'Removed from trade pile', item._trade ? 'grn' : 'ylw');
+    }
+
+    function toggleTradeVoid(invId) {
+      const item = DB.inventory.find(i => i.id === invId);
+      if (!item || !item._trade) return;
+      item._tradeVoided = !item._tradeVoided;
+      save();
+      renderMktSignals(window._mktSigFilter || 'all');
+      showToast(item._tradeVoided ? 'Voided ' + esc(item.cardName) + ' in trade' : 'Unvoided ' + esc(item.cardName), item._tradeVoided ? 'ylw' : 'grn');
     }
 
     function setTradeQty(invId, delta) {
@@ -10670,7 +10683,7 @@ select.field-input{cursor:pointer}
       const margin = _mktMargin;
       const useWn = _mktUseWn, useProc = _mktUseProc, useShip = _mktUseShip;
       let totalCost = 0, totalSell = 0;
-      tradeItems.forEach(({ item, mkt, cost }) => {
+      tradeItems.filter(({ item }) => !item._tradeVoided).forEach(({ item, mkt, cost }) => {
         const qty = Math.max(1, cn(item._tradeQty) || cn(item.qty) || 1);
         totalCost += cost * qty;
         // Use raw formula target (no market floor) so sell responds to margin slider
@@ -11039,6 +11052,7 @@ select.field-input{cursor:pointer}
         }
 
         const isTrade = !!item._trade;
+        const isTradeVoided = !!item._tradeVoided;
         const itemQty = cn(item.qty) || 1;
         const tradeQty = isTrade ? (cn(item._tradeQty) || itemQty) : itemQty;
         // Qty stepper: always shown when in trade (even qty=1 for clarity)
@@ -11050,11 +11064,16 @@ select.field-input{cursor:pointer}
           + '<button onclick="setTradeQty(\'' + item.id + '\',1)" '
           + 'style="background:var(--s2);color:' + (tradeQty >= itemQty ? 'var(--ink3)' : 'var(--ink)') + ';border:none;border-left:1px solid rgba(167,139,250,.3);padding:5px 10px;font-size:14px;cursor:pointer;font-family:var(--mono);line-height:1">+</button>'
           + '</div>';
+        const voidBtn = isTrade
+          ? '<button onclick="toggleTradeVoid(\'' + item.id + '\')" style="background:' + (isTradeVoided ? 'rgba(0,229,160,.15)' : 'rgba(255,68,102,.1)') + ';color:' + (isTradeVoided ? 'var(--grn)' : 'var(--red)') + ';border:1px solid ' + (isTradeVoided ? 'rgba(0,229,160,.3)' : 'rgba(255,68,102,.3)') + ';border-radius:7px;padding:5px 10px;font-size:9px;font-family:var(--mono);cursor:pointer;font-weight:700;flex-shrink:0">'
+          + (isTradeVoided ? 'Unvoid' : 'Void') + '</button>'
+          : '';
         const tradeBtn = isTrade
           ? '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">'
           + '<button onclick="toggleTrade(\'' + item.id + '\')" style="background:rgba(167,139,250,.2);color:#a78bfa;border:1px solid rgba(167,139,250,.5);border-radius:7px;padding:5px 10px;font-size:9px;font-family:var(--mono);cursor:pointer;font-weight:700;flex-shrink:0">'
-          + '🔄 In Trade Pile</button>'
-          + qtyStepperHtml
+          + 'In Trade Pile</button>'
+          + voidBtn
+          + (isTradeVoided ? '' : qtyStepperHtml)
           + '</div>'
           : '<button onclick="toggleTrade(\'' + item.id + '\')" style="margin-top:8px;background:var(--s2);color:var(--ink3);border:1px solid var(--bd);border-radius:7px;padding:5px 10px;font-size:9px;font-family:var(--mono);cursor:pointer;font-weight:700">'
           + '+ Add to Trade</button>';
@@ -11080,11 +11099,11 @@ select.field-input{cursor:pointer}
           + 'style="width:44px;height:61px;border-radius:4px;object-fit:cover;opacity:' + imgOpacity + ';transition:opacity .3s;border:1px solid var(--bd);background:var(--s2);display:block">'
           + '</div>';
 
-        return '<div style="padding:12px 14px;border-bottom:1px solid var(--bd)' + (isTrade ? ';background:rgba(167,139,250,.04)' : '') + '">'
+        return '<div style="padding:12px 14px;border-bottom:1px solid var(--bd)' + (isTradeVoided ? ';opacity:.45;background:rgba(255,68,102,.03)' : isTrade ? ';background:rgba(167,139,250,.04)' : '') + '">'
           + '<div style="display:flex;align-items:flex-start;gap:10px">'
           + thumbHtml
           + '<div style="flex:1;min-width:0">'
-          + '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + item.cardName + (isTrade ? ' <span style="font-size:9px;color:#a78bfa">🔄</span>' : '') + '</div>'
+          + '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' + (isTradeVoided ? ';text-decoration:line-through' : '') + '">' + esc(item.cardName) + (isTradeVoided ? ' <span style="font-size:8px;color:var(--red)">VOIDED</span>' : isTrade ? ' <span style="font-size:9px;color:#a78bfa">trade</span>' : '') + '</div>'
           + '<div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap">'
           + gameChip(item.game) + gradeBadgeHtml
           + (itemQty > 1 ? '<span style="font-size:8px;color:var(--ink3);font-family:var(--mono);background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1px 5px">qty ' + itemQty + '</span>' : '')

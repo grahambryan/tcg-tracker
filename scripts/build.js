@@ -29,13 +29,16 @@ ok('Source file found');
 if (!fs.existsSync(PUBLIC)) fs.mkdirSync(PUBLIC, { recursive: true });
 
 // 3. Copy to public/index.html (production — clean, no data)
-fs.copyFileSync(SRC, OUT);
+// Stamp build date
+const buildDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+let prodHtml = fs.readFileSync(SRC, 'utf8').replace('__BUILD_DATE__', buildDate);
+fs.writeFileSync(OUT, prodHtml);
 const size = (fs.statSync(OUT).size / 1024).toFixed(1);
 ok(`Copied → public/index.html (${size}kb)`);
 
 // 4. Generate demo.html with mock data injected
 const { MOCK_DB } = require('./mock-data');
-const srcHtml = fs.readFileSync(SRC, 'utf8');
+const srcHtml = fs.readFileSync(SRC, 'utf8').replace('__BUILD_DATE__', buildDate);
 
 // Build the demo script as a standalone block.
 // The JSON data goes into a separate <script> before the app loads,
