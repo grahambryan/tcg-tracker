@@ -12014,27 +12014,40 @@ select.field-input{cursor:pointer}
       if (status) status.textContent = '';
 
       try {
-        // 1. Unregister all service workers
+        // Fetch the latest HTML to compare build timestamps
+        var res = await fetch(location.href, { cache: 'no-store' });
+        var newHtml = await res.text();
+        var currentTs = (document.getElementById('buildStamp') || {}).textContent || '';
+        var match = newHtml.match(/id="buildStamp"[^>]*>([^<]*)/);
+        var remoteTs = match ? match[1] : '';
+
+        // Compare — if both contain the same epoch, no update
+        var currentEpoch = (currentTs.match(/\d{10,}/) || [''])[0];
+        var remoteEpoch = (remoteTs.match(/\d{10,}/) || [''])[0];
+        var hasUpdate = !currentEpoch || !remoteEpoch || currentEpoch !== remoteEpoch;
+
+        if (!hasUpdate) {
+          if (status) status.textContent = 'Already on latest version';
+          if (btn) { btn.disabled = false; btn.textContent = 'Check for Update'; }
+          return;
+        }
+
+        if (status) status.textContent = 'New version found — updating...';
+
+        // Clear SW + caches and reload
         if ('serviceWorker' in navigator) {
           var regs = await navigator.serviceWorker.getRegistrations();
           for (var r of regs) await r.unregister();
         }
-
-        // 2. Clear all caches
         if ('caches' in window) {
           var keys = await caches.keys();
           for (var k of keys) await caches.delete(k);
         }
-
-        // 3. Re-register service worker (will fetch fresh)
         if ('serviceWorker' in navigator) {
           await navigator.serviceWorker.register('sw.js');
         }
 
-        if (status) status.textContent = 'Update found — reloading...';
         if (btn) btn.textContent = 'Reloading...';
-
-        // 4. Hard reload
         setTimeout(function() { location.reload(true); }, 500);
       } catch (e) {
         if (status) status.textContent = 'Error: ' + e.message;
