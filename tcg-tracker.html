@@ -9839,10 +9839,17 @@ select.field-input{cursor:pointer}
 
     // Build a TCGplayer search URL for any card
     function tcgplayerSearchUrl(cardName, game) {
-      const clean = (cardName || '').replace(/\(PSA\s*\d+\)?/gi, '').replace(/psa\s*\d+/gi, '').replace(/\b((OP|ST|EB|PRB)\d{2}-\d{3})\b/gi, '').trim();
+      // Strip grades, card IDs, and clean up for a better search
+      const clean = (cardName || '')
+        .replace(/\(PSA\s*\d+\)?/gi, '')
+        .replace(/psa\s*\d+/gi, '')
+        .replace(/\b((OP|ST|EB|PRB)\d{2}-\d{3})\b/gi, '')
+        .replace(/\([^)]*\)/g, ' ')       // remove all parentheticals
+        .replace(/\[[^\]]*\]/g, ' ')       // remove brackets
+        .replace(/\s+/g, ' ')
+        .trim();
       if (!clean) return null;
       const gl = (game || '').toLowerCase();
-      // Map game names to TCGplayer product line slugs
       const slug = gl.includes('one piece') ? 'one-piece-card-game'
         : gl.includes('magic') || gl.includes('mtg') ? 'magic-the-gathering'
         : gl.includes('pok') ? 'pokemon'
@@ -9851,7 +9858,7 @@ select.field-input{cursor:pointer}
         : gl.includes('digimon') ? 'digimon-card-game'
         : gl.includes('flesh') ? 'flesh-and-blood-tcg'
         : 'all';
-      return 'https://www.tcgplayer.com/search/' + slug + '/product?q=' + encodeURIComponent(clean);
+      return 'https://www.tcgplayer.com/search/' + slug + '/product?q=' + encodeURIComponent(clean) + '&view=grid';
     }
 
     // Get cached card data (prices, tcgplayerUrl) for an item
