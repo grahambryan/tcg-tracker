@@ -413,16 +413,10 @@
       -webkit-tap-highlight-color: transparent
     }
 
-    html {
-      /* Fills entire screen including safe area on iOS PWA standalone mode */
-      height: 100%;
-      background: var(--s0);
-      overflow: hidden;
-    }
-
+    html,
     body {
-      height: 100dvh;
-      overflow: hidden
+      height: 100%;
+      overflow: hidden;
     }
 
     body {
@@ -589,15 +583,17 @@
    BOTTOM NAV — Pokémon TCG pocket style
    ══════════════════════════════════════ */
     .nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
       height: calc(var(--nav-h) + var(--safe-b));
       padding-bottom: var(--safe-b);
       background: var(--s0);
       border-top: 1px solid var(--bd);
       display: flex;
       align-items: stretch;
-      flex-shrink: 0;
-      position: relative;
-      z-index: 10;
+      z-index: 100;
     }
 
     .nav-item {
@@ -5024,7 +5020,7 @@ select.field-input{cursor:pointer}
 
         <div style="text-align:center;padding:4px 0 10px;font-size:9px;color:var(--ink3);font-family:var(--mono)">
           TCG.tracker · all data stays on your device
-          <div style="margin-top:2px" id="buildStamp">Last updated: 1773785024104</div>
+          <div style="margin-top:2px" id="buildStamp">Last updated: 1773788204197</div>
         </div>
       </div>
 
