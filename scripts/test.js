@@ -1053,6 +1053,59 @@ test('toggleTrade: clears void when re-adding', `
   if (DB.inventory[0]._tradeVoided) throw new Error('Void flag should be cleared on re-add');
 `);
 
+suite('TCGplayer integration');
+test('tcgplayerSearchUrl: generates correct URL for Pokemon', `
+  var url = tcgplayerSearchUrl('Charizard ex', 'Pokémon');
+  if (!url.includes('tcgplayer.com/search/pokemon/product')) throw new Error('wrong slug: ' + url);
+  if (!url.includes('Charizard')) throw new Error('missing card name: ' + url);
+`);
+test('tcgplayerSearchUrl: generates correct URL for MTG', `
+  var url = tcgplayerSearchUrl('Black Lotus', 'Magic: The Gathering');
+  if (!url.includes('tcgplayer.com/search/magic-the-gathering/product')) throw new Error('wrong slug: ' + url);
+`);
+test('tcgplayerSearchUrl: generates correct URL for One Piece', `
+  var url = tcgplayerSearchUrl('Luffy', 'One Piece');
+  if (!url.includes('tcgplayer.com/search/one-piece-card-game/product')) throw new Error('wrong slug: ' + url);
+`);
+test('tcgplayerSearchUrl: strips PSA grade from name', `
+  var url = tcgplayerSearchUrl('Charizard (PSA 10)', 'Pokémon');
+  if (url.includes('PSA')) throw new Error('PSA not stripped: ' + url);
+`);
+test('tcgplayerSearchUrl: returns null for empty name', `
+  var url = tcgplayerSearchUrl('', 'Pokémon');
+  if (url !== null) throw new Error('expected null for empty name');
+`);
+test('tcgLink: returns HTML with link', `
+  var linkHtml = tcgLink({ cardName: 'Test Card', game: 'Pokémon' });
+  if (!linkHtml.includes('tcgplayer.com')) throw new Error('no tcgplayer link: ' + linkHtml);
+  if (!linkHtml.includes('target="_blank"')) throw new Error('not opening in new tab');
+`);
+test('getCardData: returns fallback TCGplayer URL', `
+  var data = getCardData({ id: 'test123', cardName: 'Test Card', game: 'Pokémon' });
+  if (!data.tcgplayerUrl || !data.tcgplayerUrl.includes('tcgplayer.com')) throw new Error('no fallback URL');
+`);
+test('timeAgo: formats correctly', `
+  if (timeAgo(null) !== '') throw new Error('null should return empty');
+  if (timeAgo(Date.now() - 30000) !== 'just now') throw new Error('30s should be just now');
+  if (timeAgo(Date.now() - 300000) !== '5m ago') throw new Error('5min failed');
+  if (timeAgo(Date.now() - 7200000) !== '2h ago') throw new Error('2h failed');
+  if (timeAgo(Date.now() - 172800000) !== '2d ago') throw new Error('2d failed');
+`);
+test('priceFreshness: returns empty for no cache', `
+  var freshHtml = priceFreshness({ id: 'nocache99' });
+  if (freshHtml !== '') throw new Error('should be empty for uncached item');
+`);
+test('priceFreshness: returns time ago for cached item', `
+  DB.marketCache = DB.marketCache || {};
+  DB.marketCache['pf_test'] = { fetchedAt: Date.now() - 3600000 };
+  var freshHtml2 = priceFreshness({ id: 'pf_test' });
+  if (!freshHtml2.includes('1h ago')) throw new Error('expected 1h ago: ' + freshHtml2);
+  delete DB.marketCache['pf_test'];
+`);
+test('fetchFreePrice: function exists', `
+  if (typeof fetchFreePrice !== 'function') throw new Error('fetchFreePrice not defined');
+`);
+
 suite('Build date stamp');
 test('More page has build date placeholder', `
   if (typeof document !== 'undefined') {

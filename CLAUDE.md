@@ -10,7 +10,7 @@ TCG Tracker is a zero-dependency, single-file PWA for tracking trading card game
 
 ```bash
 make build             # Build production (public/index.html) + demo (public/demo.html)
-make test              # Build then run 132-test suite
+make test              # Build then run 156-test suite
 make ci                # Full CI pipeline (build + test, gates deployments)
 make deploy-prod       # CI + deploy production to gh-pages branch
 make deploy-demo       # CI + deploy demo to tcg-tracker-demo repo
