@@ -413,6 +413,11 @@
       -webkit-tap-highlight-color: transparent
     }
 
+    html {
+      /* nav color bleeds into safe-area below bottom nav on notched iPhones */
+      background: var(--s0);
+    }
+
     html,
     body {
       height: 100dvh;
@@ -5010,7 +5015,7 @@ select.field-input{cursor:pointer}
 
         <div style="text-align:center;padding:4px 0 10px;font-size:9px;color:var(--ink3);font-family:var(--mono)">
           TCG.tracker · all data stays on your device
-          <div style="margin-top:2px">Last updated: __BUILD_DATETIME__</div>
+          <div style="margin-top:2px" id="buildStamp">Last updated: __BUILD_DATETIME__</div>
         </div>
       </div>
 
@@ -11633,6 +11638,20 @@ select.field-input{cursor:pointer}
     buildDesktopNav();
     renderAll();
     initAIToggle(); // AI toggle default OFF — reads localStorage
+
+    // Format build stamp in user's local timezone
+    (function() {
+      var el = document.getElementById('buildStamp');
+      if (!el) return;
+      var txt = el.textContent || '';
+      var m = txt.match(/(\d{10,})/);
+      if (!m) return;
+      var d = new Date(parseInt(m[1], 10));
+      if (isNaN(d.getTime())) return;
+      var formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      el.textContent = 'Last updated: ' + formatted;
+    })();
 
     // Keyboard shortcut: Escape closes modal and drawer
     document.addEventListener('keydown', e => {
